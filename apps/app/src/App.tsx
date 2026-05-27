@@ -20,9 +20,9 @@ function useSession() {
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending, isRefetching } = useSession();
 
-  if (isPending) {
+  if (isPending || isRefetching) {
     return null;
   }
 
@@ -34,12 +34,16 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 function OnboardingRoute({ children }: { children: ReactNode }) {
-  const { data: session, isPending: sessionPending } = useSession();
+  const {
+    data: session,
+    isPending: sessionPending,
+    isRefetching: sessionRefetching,
+  } = useSession();
   const { data: me, isLoading: meLoading } = trpc.users.me.useQuery(undefined, {
     enabled: !!session,
   });
 
-  if (sessionPending || (session && meLoading)) {
+  if (sessionPending || sessionRefetching || (session && meLoading)) {
     return null;
   }
 
@@ -55,12 +59,16 @@ function OnboardingRoute({ children }: { children: ReactNode }) {
 }
 
 function FamilyRequiredRoute({ children }: { children: ReactNode }) {
-  const { data: session, isPending: sessionPending } = useSession();
+  const {
+    data: session,
+    isPending: sessionPending,
+    isRefetching: sessionRefetching,
+  } = useSession();
   const { data: me, isLoading: meLoading } = trpc.users.me.useQuery(undefined, {
     enabled: !!session,
   });
 
-  if (sessionPending || (session && meLoading)) {
+  if (sessionPending || sessionRefetching || (session && meLoading)) {
     return null;
   }
 

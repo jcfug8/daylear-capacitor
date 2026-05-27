@@ -16,6 +16,7 @@ import { authClient } from "../lib/auth-client";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { refetch: refetchSession } = authClient.useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -46,6 +47,9 @@ export function LoginPage() {
           return;
         }
       }
+
+      // Sign-in sets the cookie immediately; useSession updates async — wait before routing.
+      await refetchSession();
       navigate("/", { replace: true });
     } catch {
       setError("Something went wrong");
