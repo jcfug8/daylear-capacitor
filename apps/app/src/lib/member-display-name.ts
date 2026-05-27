@@ -1,5 +1,6 @@
 /** Label shown in UI for a family member. */
 export type MemberNameFields = {
+  id: string;
   userId: string | null;
   userName?: string | null;
   displayName: string;

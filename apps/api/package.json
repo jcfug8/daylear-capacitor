@@ -11,6 +11,10 @@
     "./router": {
       "types": "./dist/trpc/root.d.ts",
       "default": "./dist/trpc/root.js"
+    },
+    "./lists/persistence": {
+      "types": "./dist/lists/persistence.d.ts",
+      "default": "./dist/lists/persistence.js"
     }
   },
   "scripts": {

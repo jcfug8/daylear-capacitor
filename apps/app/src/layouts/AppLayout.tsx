@@ -54,7 +54,10 @@ export function AppLayout() {
             <IonTabButton
               key={tab.path}
               tab={tab.tab}
-              selected={location.pathname === tab.path}
+              selected={
+                location.pathname === tab.path ||
+                location.pathname.startsWith(`${tab.path}/`)
+              }
               onClick={() => navigate(tab.path)}
             >
               <IonIcon icon={tab.icon} />

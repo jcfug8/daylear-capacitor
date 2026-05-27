@@ -8,7 +8,8 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { FamilyOnboardingPage } from "./pages/FamilyOnboardingPage";
 import { ManageFamilyPage } from "./pages/ManageFamilyPage";
 import { DashboardPage } from "./pages/DashboardPage";
-import { ListsPage } from "./pages/ListsPage";
+import { ListDetailView } from "./pages/lists/ListDetailView";
+import { ListsIndexView } from "./pages/lists/ListsIndexView";
 import { LoginPage } from "./pages/LoginPage";
 import { MealsPage } from "./pages/MealsPage";
 import { RewardsPage } from "./pages/RewardsPage";
@@ -110,7 +111,10 @@ export default function App() {
         <Route path="routines" element={<RoutinesPage />} />
         <Route path="rewards" element={<RewardsPage />} />
         <Route path="meals" element={<MealsPage />} />
-        <Route path="lists" element={<ListsPage />} />
+        <Route path="lists">
+          <Route index element={<ListsIndexView />} />
+          <Route path=":listId" element={<ListDetailView />} />
+        </Route>
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="manage-family" element={<ManageFamilyPage />} />
