@@ -1,0 +1,14 @@
+import { IonApp } from "@ionic/react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import { queryClient, trpc, trpcClient } from "./lib/trpc";
+
+export function Providers({ children }: { children: ReactNode }) {
+  return (
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <IonApp>{children}</IonApp>
+      </QueryClientProvider>
+    </trpc.Provider>
+  );
+}

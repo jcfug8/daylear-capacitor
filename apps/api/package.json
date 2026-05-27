@@ -1,0 +1,42 @@
+{
+  "name": "@daylear/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./router": {
+      "types": "./dist/trpc/root.d.ts",
+      "default": "./dist/trpc/root.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:network": "HOST=0.0.0.0 tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "tsx scripts/apply-migration.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "@hono/trpc-server": "^0.3.2",
+    "@trpc/server": "^11.0.0",
+    "better-auth": "^1.2.8",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.6.14",
+    "postgres": "^3.4.5",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

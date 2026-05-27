@@ -1,0 +1,18 @@
+{
+  "name": "daylear",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo dev --filter=@daylear/api --filter=@daylear/app --filter=@daylear/marketing",
+    "dev:network": "node scripts/dev-network.mjs",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:push": "pnpm --filter @daylear/api db:push"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}

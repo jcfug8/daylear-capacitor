@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: daylear
+      POSTGRES_PASSWORD: daylear
+      POSTGRES_DB: daylear
+    volumes:
+      - daylear_pg:/var/lib/postgresql/data
+
+volumes:
+  daylear_pg:

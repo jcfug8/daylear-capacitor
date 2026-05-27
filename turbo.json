@@ -1,0 +1,33 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": [
+    "HOST",
+    "DEV_NETWORK",
+    "LAN_IP",
+    "CORS_ORIGIN",
+    "BETTER_AUTH_URL",
+    "VITE_API_URL",
+    "VITE_APP_URL",
+    "APP_PORT",
+    "MARKETING_PORT",
+    "API_PORT",
+    "API_PROXY_TARGET"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "apps/api/dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev:network": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    }
+  }
+}

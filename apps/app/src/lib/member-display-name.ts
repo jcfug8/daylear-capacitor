@@ -1,0 +1,13 @@
+/** Label shown in UI for a family member. */
+export type MemberNameFields = {
+  userId: string | null;
+  userName?: string | null;
+  displayName: string;
+};
+
+export function memberDisplayName(member: MemberNameFields): string {
+  if (member.userId && member.userName) {
+    return member.userName;
+  }
+  return member.displayName;
+}

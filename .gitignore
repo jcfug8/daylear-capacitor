@@ -1,0 +1,10 @@
+node_modules
+dist
+.turbo
+.env
+.env.local
+*.log
+.DS_Store
+apps/app/ios
+apps/app/android
+apps/app/.capacitor

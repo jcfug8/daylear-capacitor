@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+}
+
+ion-tab-bar ion-label.tab-bar-label {
+  font-size: 0.625rem;
+  letter-spacing: 0.01em;
+}
