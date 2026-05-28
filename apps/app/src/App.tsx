@@ -14,7 +14,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { MealsPage } from "./pages/MealsPage";
 import { RewardsPage } from "./pages/RewardsPage";
 import { RoutinesPage } from "./pages/RoutinesPage";
-import { TodosPage } from "./pages/TodosPage";
+import { TodosPage } from "./pages/todos/TodosPage";
 
 function useSession() {
   return authClient.useSession();

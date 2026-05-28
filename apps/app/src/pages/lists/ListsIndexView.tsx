@@ -63,9 +63,6 @@ export function ListsIndexView() {
           <IonIcon icon={addOutline} slot="icon-only" />
         </IonButton>
       </div>
-      <IonText color="medium">
-        <p className="mb-4 text-sm">Shared lists for your family</p>
-      </IonText>
 
       <CreateListModal
         isOpen={createOpen}

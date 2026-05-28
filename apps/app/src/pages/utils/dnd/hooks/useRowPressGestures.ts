@@ -1,6 +1,6 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useRef } from "react";
-import { TOUCH_DRAG_DELAY_MS, TOUCH_DRAG_TOLERANCE_PX } from "./useListDndSensors";
+import { TOUCH_DRAG_DELAY_MS, TOUCH_DRAG_TOLERANCE_PX } from "./useSortableDndSensors";
 
 const SHORT_PRESS_MS = 300;
 /** Must be longer than touch drag delay so hold-still long-press is distinct from reorder. */
@@ -24,15 +24,24 @@ type UseRowPressGesturesOptions = {
   onLongPress?: () => void;
   /** Runs before drag activates (touch hold delay or first movement). */
   onPrepareDrag?: () => void;
+  /** Runs when the pointer gesture ends (tap, cancel, or after drag). */
+  onPointerRelease?: () => void;
   /** Defaults to {@link TOUCH_DRAG_DELAY_MS}; use earlier value for section reorder. */
   prepareDragDelayMs?: number;
+  /**
+   * When false, movement before the prepare timer does not arm drag prep (allows scroll on touch).
+   * @default true
+   */
+  prepareDragOnMovement?: boolean;
 };
 
 export function useRowPressGestures({
   onShortPress,
   onLongPress,
   onPrepareDrag,
+  onPointerRelease,
   prepareDragDelayMs = TOUCH_DRAG_DELAY_MS,
+  prepareDragOnMovement = true,
 }: UseRowPressGesturesOptions) {
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prepareDragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -128,10 +137,14 @@ export function useRowPressGestures({
 
       if (moved > MOVE_CANCEL_PX) {
         clearLongPressTimer();
-        firePrepareDrag();
+        if (prepareDragOnMovement) {
+          firePrepareDrag();
+        } else {
+          clearPrepareDragTimer();
+        }
       }
     },
-    [clearLongPressTimer, firePrepareDrag],
+    [clearLongPressTimer, clearPrepareDragTimer, firePrepareDrag, prepareDragOnMovement],
   );
 
   const onPointerUp = useCallback(
@@ -150,15 +163,17 @@ export function useRowPressGestures({
       }
 
       gestureRef.current = null;
+      onPointerRelease?.();
     },
-    [clearLongPressTimer, clearPrepareDragTimer, onShortPress],
+    [clearLongPressTimer, clearPrepareDragTimer, onPointerRelease, onShortPress],
   );
 
   const onPointerCancel = useCallback(() => {
     clearLongPressTimer();
     clearPrepareDragTimer();
     gestureRef.current = null;
-  }, [clearLongPressTimer, clearPrepareDragTimer]);
+    onPointerRelease?.();
+  }, [clearLongPressTimer, clearPrepareDragTimer, onPointerRelease]);
 
   return {
     onPointerDown,

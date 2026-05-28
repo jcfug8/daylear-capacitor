@@ -1,5 +1,5 @@
-import { TOUCH_DRAG_PREPARE_MS } from "./useListDndSensors";
-import { useRowPressGestures } from "./useRowPressGestures";
+import { TOUCH_DRAG_PREPARE_MS } from "../../utils/dnd/hooks/useSortableDndSensors";
+import { useRowPressGestures } from "../../utils/dnd/hooks/useRowPressGestures";
 
 type UseSectionHeaderGesturesOptions = {
   onShortPress: () => void;

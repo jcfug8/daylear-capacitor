@@ -1,8 +1,10 @@
 import { useRowPressGestures } from "./useRowPressGestures";
 
-type UseItemRowGesturesOptions = {
+export type UseItemRowGesturesOptions = {
   onShortPress: () => void;
-  onLongPress: () => void;
+  onLongPress?: () => void;
+  onPrepareDrag?: () => void;
+  prepareDragOnMovement?: boolean;
 };
 
 export function useItemRowGestures(options: UseItemRowGesturesOptions) {

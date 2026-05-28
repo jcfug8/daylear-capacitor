@@ -19,6 +19,8 @@ function mapDomainError(error: unknown): never {
         throw new TRPCError({ code: "NOT_FOUND", message: "Member not found" });
       case "INVALID_LAYOUT":
         throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid layout" });
+      case "INVALID_ASSIGNEES":
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid assignees" });
     }
   }
   throw error;

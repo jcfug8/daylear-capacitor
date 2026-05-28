@@ -21,10 +21,8 @@ export const TOUCH_DRAG_TOLERANCE_PX = 8;
 
 /**
  * Mouse + delayed touch (no PointerSensor — it steals touch and starts drag on tiny movement).
- * Always registers all three sensors — useSensors requires a stable argument count.
- * Disable drag via sortable `disabled` / DndContext handlers when the details modal is open.
  */
-export function useListDndSensors() {
+export function useSortableDndSensors() {
   const mouse = useSensor(MouseSensor, {
     activationConstraint: {
       distance: MOUSE_DRAG_DISTANCE_PX,

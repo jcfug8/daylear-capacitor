@@ -1,11 +1,12 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  index,
   integer,
   pgTable,
-  primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { family, familyMember } from "./families.js";
@@ -41,6 +42,7 @@ export const listItems = pgTable("list_items", {
   }),
   name: text("name").notNull(),
   completed: boolean("completed").notNull().default(false),
+  points: integer("points").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -52,13 +54,20 @@ export const listItemAssignees = pgTable(
     listItemId: uuid("list_item_id")
       .notNull()
       .references(() => listItems.id, { onDelete: "cascade" }),
-    familyMemberId: uuid("family_member_id")
-      .notNull()
-      .references(() => familyMember.id, { onDelete: "cascade" }),
+    familyMemberId: uuid("family_member_id").references(() => familyMember.id, {
+      onDelete: "cascade",
+    }),
+    sortOrder: integer("sort_order").notNull().default(0),
   },
-  (table) => [
-    primaryKey({ columns: [table.listItemId, table.familyMemberId] }),
-  ],
+  (table) => ({
+    byItem: index("list_item_assignees_list_item_id_idx").on(table.listItemId),
+    uniqueMemberAssignment: uniqueIndex("list_item_assignees_item_member_unique")
+      .on(table.listItemId, table.familyMemberId)
+      .where(sql`${table.familyMemberId} is not null`),
+    uniqueAnyoneAssignment: uniqueIndex("list_item_assignees_item_anyone_unique")
+      .on(table.listItemId)
+      .where(sql`${table.familyMemberId} is null`),
+  }),
 );
 
 export const listsRelations = relations(lists, ({ many }) => ({

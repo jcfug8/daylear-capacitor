@@ -8,9 +8,7 @@ export function parseBucketKey(key: string): SectionBucketKey {
   return key === "__none__" ? null : key;
 }
 
-export function itemDndId(itemId: string) {
-  return `item:${itemId}`;
-}
+export { itemDndId } from "../../utils/dnd/lib/ids.js";
 
 export function sectionDndId(sectionId: string) {
   return `section:${sectionId}`;

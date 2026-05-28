@@ -1,0 +1,196 @@
+import { useEffect, useState } from "react";
+import { trpcErrorMessage } from "../../../lib/trpc-errors";
+import { trpc } from "../../../lib/trpc";
+import type { ListItemFormValues } from "../../lists/lib/list-item-form";
+import {
+  defaultAssigneeIdsForLane,
+  emptyListItemFormValues,
+} from "../../lists/lib/list-item-form";
+import type { AssignedTodoItem } from "../build-todo-lanes";
+
+type ModalState =
+  | { type: "closed" }
+  | { type: "edit"; listId: string; itemId: string }
+  | { type: "create" };
+
+export function useTodoItemDetailModal() {
+  const utils = trpc.useUtils();
+  const [modal, setModal] = useState<ModalState>({ type: "closed" });
+  const [createDraft, setCreateDraft] = useState<ListItemFormValues | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: lists } = trpc.lists.list.useQuery();
+
+  useEffect(() => {
+    if (modal.type !== "create" || !createDraft || createDraft.listId || !lists?.[0]) {
+      return;
+    }
+    setCreateDraft({ ...createDraft, listId: lists[0].id });
+  }, [modal.type, createDraft, lists]);
+
+  const activeListId =
+    modal.type === "edit"
+      ? modal.listId
+      : modal.type === "create"
+        ? createDraft?.listId ?? null
+        : null;
+
+  const { data: activeList } = trpc.lists.get.useQuery(
+    { id: activeListId! },
+    { enabled: !!activeListId && modal.type !== "closed" },
+  );
+
+  const detailItem =
+    modal.type === "edit"
+      ? (activeList?.items.find((item) => item.id === modal.itemId) ?? null)
+      : null;
+
+  const sections = activeList?.sections ?? [];
+
+  const updateItem = trpc.lists.items.update.useMutation({
+    onSuccess: async () => {
+      await utils.todos.list.invalidate();
+      if (activeListId) await utils.lists.get.invalidate({ id: activeListId });
+      setError(null);
+    },
+    onError: (e) => setError(trpcErrorMessage(e, "Could not update item")),
+  });
+
+  const createItem = trpc.lists.items.create.useMutation({
+    onError: (e) => setError(trpcErrorMessage(e, "Could not create item")),
+  });
+
+  const deleteItem = trpc.lists.items.delete.useMutation({
+    onSuccess: async () => {
+      await utils.todos.list.invalidate();
+      closeModal();
+      setError(null);
+    },
+    onError: (e) => setError(trpcErrorMessage(e, "Could not delete item")),
+  });
+
+  const setAssignees = trpc.lists.items.setAssignees.useMutation({
+    onSuccess: async () => {
+      await utils.todos.list.invalidate();
+      if (activeListId) await utils.lists.get.invalidate({ id: activeListId });
+      setError(null);
+    },
+    onError: (e) => setError(trpcErrorMessage(e, "Could not update assignees")),
+  });
+
+  const pending =
+    updateItem.isPending ||
+    createItem.isPending ||
+    deleteItem.isPending ||
+    setAssignees.isPending;
+
+  function closeModal() {
+    setModal({ type: "closed" });
+    setCreateDraft(null);
+  }
+
+  function openItem(item: AssignedTodoItem) {
+    setCreateDraft(null);
+    setModal({ type: "edit", listId: item.listId, itemId: item.id });
+  }
+
+  function openCreate(assigneeId: string) {
+    const defaultListId = lists?.[0]?.id ?? null;
+    setCreateDraft(
+      emptyListItemFormValues(defaultAssigneeIdsForLane(assigneeId), defaultListId),
+    );
+    setModal({ type: "create" });
+    setError(null);
+  }
+
+  function toggleComplete(itemId: string, completed: boolean) {
+    updateItem.mutate({ id: itemId, completed });
+  }
+
+  function patchCreateDraft(patch: Partial<ListItemFormValues>) {
+    setCreateDraft((prev) => (prev ? { ...prev, ...patch } : prev));
+  }
+
+  async function submitCreate() {
+    if (!createDraft?.listId) {
+      setError("Choose a list");
+      return;
+    }
+    const name = createDraft.name.trim();
+    if (!name) {
+      setError("Enter a title");
+      return;
+    }
+
+    try {
+      const item = await createItem.mutateAsync({
+        listId: createDraft.listId,
+        sectionId: createDraft.sectionId,
+        name,
+        points: createDraft.points,
+      });
+
+      await setAssignees.mutateAsync({
+        id: item.id,
+        memberIds: createDraft.assigneeIds,
+      });
+
+      if (createDraft.completed) {
+        await updateItem.mutateAsync({ id: item.id, completed: true });
+      }
+
+      await utils.todos.list.invalidate();
+      await utils.lists.get.invalidate({ id: createDraft.listId });
+      closeModal();
+      setError(null);
+    } catch {
+      // Errors surfaced via mutation onError
+    }
+  }
+
+  const isOpen = modal.type !== "closed";
+  const isCreate = modal.type === "create";
+
+  return {
+    modal,
+    detailItem,
+    sections,
+    lists: lists ?? [],
+    createDraft,
+    isOpen,
+    isCreate,
+    pending,
+    error,
+    openItem,
+    openCreate,
+    closeModal,
+    toggleComplete,
+    patchCreateDraft,
+    submitCreate,
+    onSaveName: (name: string) => {
+      if (modal.type !== "edit") return;
+      updateItem.mutate({ id: modal.itemId, name });
+    },
+    onToggleComplete: (completed: boolean) => {
+      if (modal.type !== "edit") return;
+      updateItem.mutate({ id: modal.itemId, completed });
+    },
+    onChangePoints: (points: number) => {
+      if (modal.type !== "edit") return;
+      updateItem.mutate({ id: modal.itemId, points });
+    },
+    onChangeSection: (sectionId: string | null) => {
+      if (modal.type !== "edit") return;
+      updateItem.mutate({ id: modal.itemId, sectionId });
+    },
+    onSetAssignees: (memberIds: string[]) => {
+      if (modal.type !== "edit") return;
+      setAssignees.mutate({ id: modal.itemId, memberIds });
+    },
+    onDelete: () => {
+      if (modal.type !== "edit") return;
+      deleteItem.mutate({ id: modal.itemId });
+    },
+    editListId: modal.type === "edit" ? modal.listId : null,
+  };
+}

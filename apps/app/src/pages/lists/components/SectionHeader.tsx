@@ -2,7 +2,7 @@ import { IonButton, IonIcon } from "@ionic/react";
 import { chevronDownOutline, chevronForwardOutline } from "ionicons/icons";
 import { useRef } from "react";
 import { useSectionHeaderGestures } from "../hooks/useSectionHeaderGestures";
-import { composeDraggableListeners } from "../lib/compose-pointer-listeners";
+import { composeDraggableListeners } from "../../utils/dnd/lib/compose-pointer-listeners";
 import {
   InlineEditableText,
   type InlineEditableTextHandle,

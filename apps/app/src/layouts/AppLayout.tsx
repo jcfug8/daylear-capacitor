@@ -45,7 +45,7 @@ export function AppLayout() {
           </IonToolbar>
         </IonHeader>
         <IonContent>
-          <div className="ion-padding">
+          <div className="ion-padding app-page-shell">
             <Outlet />
           </div>
         </IonContent>

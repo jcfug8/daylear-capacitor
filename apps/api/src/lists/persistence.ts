@@ -7,6 +7,8 @@ import {
   lists,
 } from "../db/schema/lists.js";
 
+const ANYONE_ASSIGNEE_ID = "anyone";
+
 export type List = {
   id: string;
   familyId: string;
@@ -30,6 +32,7 @@ export type ListItem = {
   sectionId: string | null;
   name: string;
   completed: boolean;
+  points: number;
   sortOrder: number;
   assigneeIds: string[];
   createdAt: Date;
@@ -39,6 +42,18 @@ export type ListItem = {
 export type ListDetail = List & {
   sections: ListSection[];
   items: ListItem[];
+};
+
+/** A list item with an assignment, for the family todos board. */
+export type AssignedTodoItem = {
+  id: string;
+  name: string;
+  completed: boolean;
+  points: number;
+  listId: string;
+  listName: string;
+  sectionName: string | null;
+  assigneeId: string;
 };
 
 function toList(row: typeof lists.$inferSelect): List {
@@ -72,6 +87,7 @@ function toListItem(
     sectionId: row.sectionId,
     name: row.name,
     completed: row.completed,
+    points: row.points,
     sortOrder: row.sortOrder,
     assigneeIds,
     createdAt: row.createdAt,
@@ -92,10 +108,47 @@ async function assigneeIdsByItemIds(
 
   for (const row of rows) {
     const existing = map.get(row.listItemId) ?? [];
-    existing.push(row.familyMemberId);
+    existing.push(row.familyMemberId ?? ANYONE_ASSIGNEE_ID);
     map.set(row.listItemId, existing);
   }
   return map;
+}
+
+export async function listAssignedTodosByFamilyId(
+  familyId: string,
+): Promise<AssignedTodoItem[]> {
+  const rows = await db
+    .select({
+      id: listItems.id,
+      name: listItems.name,
+      completed: listItems.completed,
+      points: listItems.points,
+      listId: lists.id,
+      listName: lists.name,
+      sectionName: listSections.name,
+      assigneeId: listItemAssignees.familyMemberId,
+    })
+    .from(listItemAssignees)
+    .innerJoin(listItems, eq(listItemAssignees.listItemId, listItems.id))
+    .innerJoin(lists, eq(listItems.listId, lists.id))
+    .leftJoin(listSections, eq(listItems.sectionId, listSections.id))
+    .where(eq(lists.familyId, familyId))
+    .orderBy(
+      asc(listItemAssignees.sortOrder),
+      asc(listItems.sortOrder),
+      asc(listItems.name),
+    );
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    completed: row.completed,
+    points: row.points,
+    listId: row.listId,
+    listName: row.listName,
+    sectionName: row.sectionName,
+    assigneeId: row.assigneeId ?? ANYONE_ASSIGNEE_ID,
+  }));
 }
 
 export async function listByFamilyId(familyId: string): Promise<List[]> {
@@ -271,6 +324,7 @@ export async function createItem(input: {
   listId: string;
   sectionId?: string | null;
   name: string;
+  points?: number;
 }): Promise<ListItem> {
   const sectionId = input.sectionId ?? null;
   const sortOrder = await nextItemSortOrder(input.listId, sectionId);
@@ -281,6 +335,7 @@ export async function createItem(input: {
       listId: input.listId,
       sectionId,
       name: input.name,
+      points: input.points ?? 0,
       sortOrder,
     })
     .returning();
@@ -326,6 +381,7 @@ export async function updateItem(
   patch: {
     name?: string;
     completed?: boolean;
+    points?: number;
     sectionId?: string | null;
     sortOrder?: number;
   },
@@ -349,30 +405,140 @@ export async function deleteItem(itemId: string): Promise<boolean> {
   return deleted.length > 0;
 }
 
-export async function setItemAssignees(
-  itemId: string,
-  familyMemberIds: string[],
-): Promise<ListItem | null> {
-  await db.transaction(async (tx) => {
-    await tx
-      .delete(listItemAssignees)
-      .where(eq(listItemAssignees.listItemId, itemId));
+function assigneeKeyMatches(
+  rowMemberId: string | null,
+  targetMemberId: string | null,
+): boolean {
+  return (rowMemberId ?? null) === (targetMemberId ?? null);
+}
 
-    if (familyMemberIds.length > 0) {
+async function nextAssignmentSortOrders(
+  executor: Pick<typeof db, "select">,
+  familyId: string,
+  familyMemberIds: Array<string | null>,
+): Promise<Map<string | null, number>> {
+  const nextByAssignee = new Map<string | null, number>();
+
+  for (const familyMemberId of familyMemberIds) {
+    const [result] = await executor
+      .select({
+        max: sql<number>`coalesce(max(${listItemAssignees.sortOrder}), -1)`,
+      })
+      .from(listItemAssignees)
+      .innerJoin(listItems, eq(listItemAssignees.listItemId, listItems.id))
+      .innerJoin(lists, eq(listItems.listId, lists.id))
+      .where(
+        and(
+          eq(lists.familyId, familyId),
+          familyMemberId === null
+            ? isNull(listItemAssignees.familyMemberId)
+            : eq(listItemAssignees.familyMemberId, familyMemberId),
+        ),
+      );
+
+    nextByAssignee.set(familyMemberId, (result?.max ?? -1) + 1);
+  }
+
+  return nextByAssignee;
+}
+
+export async function setItemAssignees(
+  familyId: string,
+  itemId: string,
+  familyMemberIds: Array<string | null>,
+): Promise<ListItem | null> {
+  const [itemRow] = await db
+    .select({ item: listItems })
+    .from(listItems)
+    .innerJoin(lists, eq(listItems.listId, lists.id))
+    .where(and(eq(listItems.id, itemId), eq(lists.familyId, familyId)));
+  if (!itemRow) return null;
+
+  const existingRows = await db
+    .select()
+    .from(listItemAssignees)
+    .where(eq(listItemAssignees.listItemId, itemId));
+
+  const targetIds = familyMemberIds;
+  const toRemove = existingRows.filter(
+    (row) => !targetIds.some((id) => assigneeKeyMatches(row.familyMemberId, id)),
+  );
+  const toAdd = targetIds.filter(
+    (id) => !existingRows.some((row) => assigneeKeyMatches(row.familyMemberId, id)),
+  );
+
+  await db.transaction(async (tx) => {
+    for (const row of toRemove) {
+      await tx
+        .delete(listItemAssignees)
+        .where(
+          and(
+            eq(listItemAssignees.listItemId, itemId),
+            row.familyMemberId === null
+              ? isNull(listItemAssignees.familyMemberId)
+              : eq(listItemAssignees.familyMemberId, row.familyMemberId),
+          ),
+        );
+    }
+
+    if (toAdd.length > 0) {
+      const nextOrders = await nextAssignmentSortOrders(tx, familyId, toAdd);
       await tx.insert(listItemAssignees).values(
-        familyMemberIds.map((familyMemberId) => ({
+        toAdd.map((familyMemberId) => ({
           listItemId: itemId,
           familyMemberId,
+          sortOrder: nextOrders.get(familyMemberId) ?? 0,
         })),
       );
     }
   });
 
-  const [row] = await db
-    .select()
-    .from(listItems)
-    .where(eq(listItems.id, itemId));
-  if (!row) return null;
+  const assignees = await assigneeIdsByItemIds([itemId]);
+  return toListItem(itemRow.item, assignees.get(itemId) ?? []);
+}
 
-  return toListItem(row, familyMemberIds);
+export async function applyAssigneeTodoOrder(
+  familyId: string,
+  assigneeId: string | null,
+  itemIds: string[],
+): Promise<void> {
+  if (itemIds.length === 0) return;
+
+  const rows = await db
+    .select({
+      listItemId: listItemAssignees.listItemId,
+    })
+    .from(listItemAssignees)
+    .innerJoin(listItems, eq(listItemAssignees.listItemId, listItems.id))
+    .innerJoin(lists, eq(listItems.listId, lists.id))
+    .where(
+      and(
+        eq(lists.familyId, familyId),
+        inArray(listItemAssignees.listItemId, itemIds),
+        assigneeId === null
+          ? isNull(listItemAssignees.familyMemberId)
+          : eq(listItemAssignees.familyMemberId, assigneeId),
+      ),
+    );
+
+  const foundIds = new Set(rows.map((r) => r.listItemId));
+  if (foundIds.size !== itemIds.length) {
+    throw new Error("INVALID_TODO_ORDER");
+  }
+
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < itemIds.length; i++) {
+      await tx
+        .update(listItemAssignees)
+        .set({ sortOrder: i })
+        .where(
+          and(
+            eq(listItemAssignees.listItemId, itemIds[i]),
+            assigneeId === null
+              ? isNull(listItemAssignees.familyMemberId)
+              : eq(listItemAssignees.familyMemberId, assigneeId),
+          ),
+        );
+    }
+  });
 }

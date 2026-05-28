@@ -1,8 +1,9 @@
 import { IonCheckbox, IonIcon, IonItem, IonLabel } from "@ionic/react";
 import { personOutline } from "ionicons/icons";
 import { useRef } from "react";
-import { useItemRowGestures } from "../hooks/useItemRowGestures";
-import { composeDraggableListeners } from "../lib/compose-pointer-listeners";
+import { ItemPointsLabel } from "../../../components/ItemPointsLabel";
+import { useItemRowGestures } from "../../utils/dnd/hooks/useItemRowGestures";
+import { composeDraggableListeners } from "../../utils/dnd/lib/compose-pointer-listeners";
 import {
   InlineEditableText,
   type InlineEditableTextHandle,
@@ -13,6 +14,7 @@ type ListItem = {
   id: string;
   name: string;
   completed: boolean;
+  points: number;
   assigneeIds: string[];
 };
 
@@ -78,14 +80,16 @@ export function ListItemRow({
             inputClassName="font-normal"
           />
         </IonLabel>
-        {hasAssignees && (
-          <IonIcon
-            slot="end"
-            icon={personOutline}
-            className="text-[var(--ion-color-medium)] text-lg shrink-0 pointer-events-none"
-            aria-label="Assigned"
-          />
-        )}
+        <div slot="end" className="flex items-center gap-2 shrink-0 pointer-events-none">
+          <ItemPointsLabel points={item.points} />
+          {hasAssignees && (
+            <IonIcon
+              icon={personOutline}
+              className="text-[var(--ion-color-medium)] text-lg"
+              aria-label="Assigned"
+            />
+          )}
+        </div>
       </IonItem>
     </div>
   );

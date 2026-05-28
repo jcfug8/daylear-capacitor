@@ -8,6 +8,7 @@ export type List = persistence.List;
 export type ListSection = persistence.ListSection;
 export type ListItem = persistence.ListItem;
 export type ListDetail = persistence.ListDetail;
+export const ANYONE_ASSIGNEE_ID = "anyone" as const;
 
 const listIdInput = z.object({
   id: z.string().uuid(),
@@ -44,22 +45,26 @@ export const updateListSectionInput = sectionIdInput.extend({
 
 export const deleteListSectionInput = sectionIdInput;
 
+const listItemPointsSchema = z.number().int().min(0).max(999_999);
+
 export const createListItemInput = z.object({
   listId: z.string().uuid(),
   sectionId: z.string().uuid().nullable().optional(),
   name: z.string().min(1).max(500),
+  points: listItemPointsSchema.optional(),
 });
 
 export const updateListItemInput = itemIdInput.extend({
   name: z.string().min(1).max(500).optional(),
   completed: z.boolean().optional(),
+  points: listItemPointsSchema.optional(),
   sectionId: z.string().uuid().nullable().optional(),
 });
 
 export const deleteListItemInput = itemIdInput;
 
 export const setListItemAssigneesInput = itemIdInput.extend({
-  memberIds: z.array(z.string().uuid()),
+  memberIds: z.array(z.union([z.string().uuid(), z.literal(ANYONE_ASSIGNEE_ID)])),
 });
 
 export const applyListLayoutInput = z.object({
@@ -218,6 +223,7 @@ export async function createListItem(
     listId: input.listId,
     sectionId: input.sectionId ?? null,
     name: input.name,
+    points: input.points,
   });
 }
 
@@ -238,11 +244,13 @@ export async function updateListItem(
   const patch: {
     name?: string;
     completed?: boolean;
+    points?: number;
     sectionId?: string | null;
     sortOrder?: number;
   } = {};
   if (input.name !== undefined) patch.name = input.name;
   if (input.completed !== undefined) patch.completed = input.completed;
+  if (input.points !== undefined) patch.points = input.points;
   if (input.sectionId !== undefined) {
     patch.sectionId = input.sectionId;
     if (input.sectionId !== existing.sectionId) {
@@ -290,7 +298,12 @@ export async function setListItemAssignees(
     throw new Error("ITEM_NOT_FOUND");
   }
 
-  if (input.memberIds.length > 0) {
+  const includesAnyone = input.memberIds.includes(ANYONE_ASSIGNEE_ID);
+  if (includesAnyone && input.memberIds.length > 1) {
+    throw new Error("INVALID_ASSIGNEES");
+  }
+
+  if (!includesAnyone && input.memberIds.length > 0) {
     const members = await familiesPersistence.listMembersByFamilyId(familyId);
     const memberIds = new Set(members.map((m) => m.id));
     for (const memberId of input.memberIds) {
@@ -300,7 +313,14 @@ export async function setListItemAssignees(
     }
   }
 
-  const updated = await persistence.setItemAssignees(input.id, input.memberIds);
+  const nextAssignees = includesAnyone
+    ? [null]
+    : (input.memberIds as string[]);
+  const updated = await persistence.setItemAssignees(
+    familyId,
+    input.id,
+    nextAssignees,
+  );
   if (!updated) {
     throw new Error("ITEM_NOT_FOUND");
   }

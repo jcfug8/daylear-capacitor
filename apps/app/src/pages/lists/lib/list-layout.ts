@@ -10,6 +10,7 @@ export type ListLayoutItem = {
   sortOrder: number;
   name: string;
   completed: boolean;
+  points: number;
   assigneeIds: string[];
 };
 

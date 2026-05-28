@@ -7,7 +7,7 @@ import type { MemberNameFields } from "../../../lib/member-display-name";
 import { trpcErrorMessage } from "../../../lib/trpc-errors";
 import { trpc } from "../../../lib/trpc";
 import { useListDragHandlers } from "../hooks/useListDragHandlers";
-import { useListDndSensors } from "../hooks/useListDndSensors";
+import { useSortableDndSensors } from "../../utils/dnd/hooks/useSortableDndSensors";
 import {
   buildLayoutFromListDetail,
   layoutToApplyInput,
@@ -27,7 +27,7 @@ import type {
 import { sectionDndId } from "../lib/list-dnd";
 import type { ListDetail } from "../types";
 import { ListItemBucket } from "./ListItemBucket";
-import { ListItemDetailModal } from "./ListItemDetailModal";
+import { ListItemModal } from "./ListItemModal";
 import { SectionHeader } from "./SectionHeader";
 import { SortableSectionBlock } from "./SortableSectionBlock";
 
@@ -92,20 +92,27 @@ export function ListDetailEditor({
   });
 
   const updateItem = trpc.lists.items.update.useMutation({
-    onSuccess: async () => utils.lists.get.invalidate({ id: list.id }),
+    onSuccess: async () => {
+      await utils.lists.get.invalidate({ id: list.id });
+      await utils.todos.list.invalidate();
+    },
     onError: (e) => onError(trpcErrorMessage(e, "Could not update item")),
   });
 
   const deleteItem = trpc.lists.items.delete.useMutation({
     onSuccess: async () => {
       await utils.lists.get.invalidate({ id: list.id });
+      await utils.todos.list.invalidate();
       setDetailItemId(null);
     },
     onError: (e) => onError(trpcErrorMessage(e, "Could not delete item")),
   });
 
   const setAssignees = trpc.lists.items.setAssignees.useMutation({
-    onSuccess: async () => utils.lists.get.invalidate({ id: list.id }),
+    onSuccess: async () => {
+      await utils.lists.get.invalidate({ id: list.id });
+      await utils.todos.list.invalidate();
+    },
     onError: (e) => onError(trpcErrorMessage(e, "Could not update assignees")),
   });
 
@@ -114,7 +121,7 @@ export function ListDetailEditor({
   }, [list]);
 
   const itemDetailsOpen = !!detailItemId;
-  const sensors = useListDndSensors();
+  const sensors = useSortableDndSensors();
 
   useEffect(() => {
     if (itemDetailsOpen) setActiveDragId(null);
@@ -404,7 +411,9 @@ export function ListDetailEditor({
         </IonNote>
       )}
 
-      <ListItemDetailModal
+      <ListItemModal
+        mode="edit"
+        listId={list.id}
         item={detailItem}
         sections={layout.sections}
         family={family}
@@ -414,6 +423,9 @@ export function ListDetailEditor({
         onSaveName={(name) => detailItem && updateItem.mutate({ id: detailItem.id, name })}
         onToggleComplete={(completed) =>
           detailItem && updateItem.mutate({ id: detailItem.id, completed })
+        }
+        onChangePoints={(points) =>
+          detailItem && updateItem.mutate({ id: detailItem.id, points })
         }
         onChangeSection={(sectionId) =>
           detailItem && updateItem.mutate({ id: detailItem.id, sectionId })
