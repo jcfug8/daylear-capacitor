@@ -4,7 +4,7 @@ import { TOUCH_DRAG_DELAY_MS, TOUCH_DRAG_TOLERANCE_PX } from "./useListDndSensor
 
 const SHORT_PRESS_MS = 300;
 /** Must be longer than touch drag delay so hold-still long-press is distinct from reorder. */
-export const LONG_PRESS_MS = TOUCH_DRAG_DELAY_MS + 150;
+export const LONG_PRESS_MS = TOUCH_DRAG_DELAY_MS + 350;
 const MOVE_CANCEL_PX = TOUCH_DRAG_TOLERANCE_PX;
 
 const IGNORE_SELECTOR =
