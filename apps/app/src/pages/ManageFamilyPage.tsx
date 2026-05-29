@@ -21,6 +21,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { JoinCodeWaitPanel } from "../components/JoinCodeWaitPanel";
+import { PageHeader } from "../components/PageHeader";
 import { memberDisplayName } from "../lib/member-display-name";
 import { trpcErrorMessage } from "../lib/trpc-errors";
 import { trpc } from "../lib/trpc";
@@ -229,6 +230,7 @@ export function ManageFamilyPage() {
 
   return (
     <>
+      <PageHeader title="Family" />
       <IonText>
         <h2 className="text-xl font-semibold mb-1">{current.family.name}</h2>
       </IonText>

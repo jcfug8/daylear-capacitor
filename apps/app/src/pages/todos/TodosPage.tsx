@@ -1,8 +1,9 @@
 import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
-import { IonButton, IonIcon, IonNote, IonSpinner, IonText } from "@ionic/react";
-import { albumsOutline, listOutline } from "ionicons/icons";
+import { IonNote, IonSpinner, IonText } from "@ionic/react";
 import { useMemo, useState } from "react";
+import { PageHeader } from "../../components/PageHeader";
 import { findAssigneeDragItem } from "./lib/find-assignee-drag-item";
+import { TodosViewModeSwitch } from "./components/TodosViewModeSwitch";
 import { TodoDragOverlay } from "./components/TodoDragOverlay";
 import { useSortableDndSensors } from "../utils/dnd/hooks/useSortableDndSensors";
 import { trpc } from "../../lib/trpc";
@@ -51,31 +52,20 @@ export function TodosPage() {
 
   return (
     <div className="flex flex-1 flex-col min-h-0 min-w-0">
+      <PageHeader
+        title="Todos"
+        end={
+          !isLoading && family ? (
+            <TodosViewModeSwitch value={viewMode} onToggle={toggleViewMode} />
+          ) : undefined
+        }
+      />
       <div
         className={[
           "flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden",
           isLanesView ? "-mx-4 w-[calc(100%+2rem)]" : "w-full",
         ].join(" ")}
       >
-        <div className="px-4 shrink-0">
-          <div className="flex items-start justify-between gap-2 mb-4">
-            <IonText>
-              <h2 className="text-xl font-semibold m-0">Todos</h2>
-            </IonText>
-            {!isLoading && family && (
-              <IonButton
-                fill="clear"
-                size="small"
-                className="m-0 shrink-0"
-                aria-label={isLanesView ? "Show list view" : "Show swim lanes"}
-                onClick={toggleViewMode}
-              >
-                <IonIcon slot="icon-only" icon={isLanesView ? listOutline : albumsOutline} />
-              </IonButton>
-            )}
-          </div>
-        </div>
-
         {isLoading && (
           <div className="ion-text-center ion-padding flex-1">
             <IonSpinner name="crescent" />

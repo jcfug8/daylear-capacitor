@@ -1,5 +1,6 @@
 import { IonButton, IonNote, IonSpinner, IonText } from "@ionic/react";
 import { useMemo, useState } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { trpcErrorMessage } from "../lib/trpc-errors";
 import { trpc } from "../lib/trpc";
 import { buildRewardLanes } from "./rewards/build-reward-lanes";
@@ -49,25 +50,22 @@ export function RewardsPage() {
 
   return (
     <div className="flex flex-1 flex-col min-h-0 min-w-0">
+      <PageHeader
+        title="Rewards"
+        end={
+          !isLoading && family ? (
+            <IonButton
+              fill="outline"
+              size="small"
+              className="m-0 shrink-0"
+              onClick={() => setManageOpen(true)}
+            >
+              Manage rewards
+            </IonButton>
+          ) : undefined
+        }
+      />
       <div className="flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden w-full">
-        <div className="px-4 shrink-0">
-          <div className="flex items-start justify-between gap-2 mb-4">
-            <IonText>
-              <h2 className="text-xl font-semibold m-0">Rewards</h2>
-            </IonText>
-            {!isLoading && family && (
-              <IonButton
-                fill="outline"
-                size="small"
-                className="m-0 shrink-0"
-                onClick={() => setManageOpen(true)}
-              >
-                Manage rewards
-              </IonButton>
-            )}
-          </div>
-        </div>
-
         {isLoading && (
           <div className="ion-text-center ion-padding flex-1">
             <IonSpinner name="crescent" />

@@ -1,6 +1,7 @@
 import { IonCheckbox } from "@ionic/react";
 import { ItemPointsLabel } from "../../../components/ItemPointsLabel";
 import { isListItemCompleted } from "../../../lib/list-item-completion";
+import { SWIM_LANE_SURFACE } from "../../utils/swim-lanes";
 import type { AssignedTodoItem } from "../build-todo-lanes";
 
 type TodoCardProps = {
@@ -45,8 +46,8 @@ export function TodoCard({ item, onOpen, onToggleComplete, updatePending }: Todo
   return (
     <div
       className={[
-        "flex items-start gap-2 rounded-lg border border-[var(--ion-color-light-shade)]",
-        "bg-[var(--ion-background-color)] px-3 py-2.5 shadow-sm",
+        "flex items-start gap-2 px-3 py-2.5",
+        SWIM_LANE_SURFACE,
         isCompleted ? "opacity-70" : "",
       ].join(" ")}
     >

@@ -1,4 +1,5 @@
 import { NameListContent } from "../components/NameListContent";
+import { PageHeader } from "../components/PageHeader";
 import { trpc } from "../lib/trpc";
 
 export function MealsPage() {
@@ -9,15 +10,18 @@ export function MealsPage() {
   });
 
   return (
-    <NameListContent
-      fieldLabel="New meal"
-      placeholder="Taco Tuesday…"
-      emptyNote="No meals yet. Add one above."
-      loadingLabel="Loading meals…"
-      items={meals}
-      isLoading={isLoading}
-      isCreating={createMeal.isPending}
-      onAdd={(name) => createMeal.mutate({ name })}
-    />
+    <>
+      <PageHeader title="Meals" />
+      <NameListContent
+        fieldLabel="New meal"
+        placeholder="Taco Tuesday…"
+        emptyNote="No meals yet. Add one above."
+        loadingLabel="Loading meals…"
+        items={meals}
+        isLoading={isLoading}
+        isCreating={createMeal.isPending}
+        onAdd={(name) => createMeal.mutate({ name })}
+      />
+    </>
   );
 }

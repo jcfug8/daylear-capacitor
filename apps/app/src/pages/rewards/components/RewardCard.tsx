@@ -1,4 +1,5 @@
 import { formatItemPointsLabel } from "../../../lib/format-item-points";
+import { SWIM_LANE_SURFACE } from "../../utils/swim-lanes";
 import type { AssignedReward } from "../build-reward-lanes";
 
 type RewardCardProps = {
@@ -19,8 +20,8 @@ export function RewardCard({ reward, memberPoints, disabled, onSelect }: RewardC
       disabled={isDisabled}
       onClick={onSelect}
       className={[
-        "m-0 w-full rounded-lg border px-3 py-2.5 text-left shadow-sm transition-opacity",
-        "border-[var(--ion-color-light-shade)] bg-[var(--ion-background-color)]",
+        "m-0 w-full px-3 py-2.5 text-left transition-opacity",
+        SWIM_LANE_SURFACE,
         isDisabled ? "cursor-not-allowed opacity-45" : "cursor-pointer active:opacity-80",
       ].join(" ")}
     >

@@ -1,14 +1,16 @@
-import { IonCheckbox, IonIcon, IonItem, IonLabel } from "@ionic/react";
-import { personOutline } from "ionicons/icons";
+import { IonCheckbox } from "@ionic/react";
 import { useRef } from "react";
-import { ItemPointsLabel } from "../../../components/ItemPointsLabel";
+import type { MemberNameFields } from "../../../lib/member-display-name";
 import { isListItemCompleted } from "../../../lib/list-item-completion";
 import { useItemRowGestures } from "../../utils/dnd/hooks/useItemRowGestures";
 import { composeDraggableListeners } from "../../utils/dnd/lib/compose-pointer-listeners";
+import { listItemBadgeLabel } from "../lib/list-item-badge-label";
+import { LIST_ITEM_CARD } from "../lib/list-item-card-styles";
 import {
   InlineEditableText,
   type InlineEditableTextHandle,
 } from "./InlineEditableText";
+import { ListItemPillBadge } from "./ListItemPillBadge";
 import type { SortableItemShellProps } from "./SortableItemWrapper";
 
 type ListItem = {
@@ -21,6 +23,7 @@ type ListItem = {
 
 type ListItemRowProps = SortableItemShellProps & {
   item: ListItem;
+  familyMembers?: MemberNameFields[];
   onRename: (name: string) => void;
   onOpenDetails: () => void;
   onToggleComplete: (itemId: string) => void;
@@ -29,6 +32,7 @@ type ListItemRowProps = SortableItemShellProps & {
 
 export function ListItemRow({
   item,
+  familyMembers = [],
   onRename,
   onOpenDetails,
   onToggleComplete,
@@ -40,6 +44,7 @@ export function ListItemRow({
 }: ListItemRowProps) {
   const titleRef = useRef<InlineEditableTextHandle>(null);
   const isCompleted = isListItemCompleted(item);
+  const badgeLabel = listItemBadgeLabel(item, familyMembers);
 
   const gestures = useItemRowGestures({
     onShortPress: () => {
@@ -51,10 +56,8 @@ export function ListItemRow({
   const composedListeners = composeDraggableListeners(listeners, gestures);
 
   const titleClassName = isCompleted
-    ? "font-normal line-through text-[var(--ion-color-medium)]"
-    : "font-normal";
-
-  const hasAssignees = item.assigneeIds.length > 0;
+    ? "text-sm font-medium line-through text-[var(--ion-color-medium)]"
+    : "text-sm font-medium text-[var(--ion-text-color)]";
 
   return (
     <div
@@ -65,36 +68,33 @@ export function ListItemRow({
       {...composedListeners}
       className="touch-manipulation"
     >
-      <IonItem className={`items-center ${isCompleted ? "opacity-70" : ""}`} lines="full">
+      <div
+        className={[
+          "flex items-center gap-3 px-3 py-2.5",
+          LIST_ITEM_CARD,
+          isCompleted ? "opacity-70" : "",
+        ].join(" ")}
+      >
         <IonCheckbox
-          slot="start"
           data-no-item-gesture
           checked={isCompleted}
           disabled={updatePending}
+          className="shrink-0"
           onPointerDown={(e) => e.stopPropagation()}
           onIonChange={() => onToggleComplete(item.id)}
         />
-        <IonLabel className="ion-text-wrap min-w-0">
+        <div className="min-w-0 flex-1">
           <InlineEditableText
             ref={titleRef}
             value={item.name}
             onSave={onRename}
             clickToEdit={false}
             className={titleClassName}
-            inputClassName="font-normal"
+            inputClassName="text-sm font-medium"
           />
-        </IonLabel>
-        <div slot="end" className="flex items-center gap-2 shrink-0 pointer-events-none">
-          <ItemPointsLabel points={item.points} />
-          {hasAssignees && (
-            <IonIcon
-              icon={personOutline}
-              className="text-[var(--ion-color-medium)] text-lg"
-              aria-label="Assigned"
-            />
-          )}
         </div>
-      </IonItem>
+        {badgeLabel ? <ListItemPillBadge>{badgeLabel}</ListItemPillBadge> : null}
+      </div>
     </div>
   );
 }

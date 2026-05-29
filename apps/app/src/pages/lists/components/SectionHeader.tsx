@@ -1,8 +1,7 @@
-import { IonButton, IonIcon } from "@ionic/react";
-import { chevronDownOutline, chevronForwardOutline } from "ionicons/icons";
+import { IonItem } from "@ionic/react";
 import { useRef } from "react";
-import { useSectionHeaderGestures } from "../hooks/useSectionHeaderGestures";
 import { composeDraggableListeners } from "../../utils/dnd/lib/compose-pointer-listeners";
+import { useSectionHeaderGestures } from "../hooks/useSectionHeaderGestures";
 import {
   InlineEditableText,
   type InlineEditableTextHandle,
@@ -11,8 +10,6 @@ import type { SortableSectionShellProps } from "./SortableSectionBlock";
 
 type SectionHeaderProps = SortableSectionShellProps & {
   name: string;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
   onPrepareReorder: () => void;
   onRename: (name: string) => void;
   onDelete: () => void;
@@ -20,8 +17,6 @@ type SectionHeaderProps = SortableSectionShellProps & {
 
 export function SectionHeader({
   name,
-  collapsed,
-  onToggleCollapsed,
   onPrepareReorder,
   onRename,
   onDelete,
@@ -49,12 +44,14 @@ export function SectionHeader({
   }
 
   return (
-    <div
-      {...attributes}
-      {...composedListeners}
-      className="touch-manipulation mb-1"
-    >
-      <div className="flex items-center gap-0 min-w-0 w-full">
+    <IonItem slot="header" lines="none" className="list-section-accordion-header">
+      <div
+        {...attributes}
+        {...composedListeners}
+        className="touch-manipulation min-w-0 flex-1 py-2"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         <InlineEditableText
           ref={titleRef}
           value={name}
@@ -62,21 +59,9 @@ export function SectionHeader({
           required={false}
           clickToEdit={false}
           placeholder="Section name"
-          className="text-base font-semibold flex-1 min-w-0"
+          className="font-serif text-xl font-semibold text-[var(--ion-text-color)] min-w-0"
         />
-        <IonButton
-          fill="clear"
-          size="small"
-          className="shrink-0 m-0"
-          data-no-section-gesture
-          aria-label={collapsed ? "Expand section" : "Collapse section"}
-          aria-expanded={!collapsed}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={onToggleCollapsed}
-        >
-          <IonIcon icon={collapsed ? chevronForwardOutline : chevronDownOutline} />
-        </IonButton>
       </div>
-    </div>
+    </IonItem>
   );
 }

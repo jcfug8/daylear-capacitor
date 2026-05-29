@@ -1,5 +1,6 @@
-import { IonInput, IonItem, IonLabel } from "@ionic/react";
+import { IonInput } from "@ionic/react";
 import { useRef, useState } from "react";
+import { LIST_ITEM_CARD } from "../lib/list-item-card-styles";
 
 type NewItemPlaceholderProps = {
   disabled?: boolean;
@@ -38,11 +39,12 @@ export function NewItemPlaceholder({ disabled, onCommit }: NewItemPlaceholderPro
 
   if (active) {
     return (
-      <IonItem className="opacity-80">
+      <div className={`px-3 py-2 ${LIST_ITEM_CARD} border-dashed`}>
         <IonInput
           ref={inputRef}
           value={draft}
           placeholder="Item name"
+          className="text-sm"
           onIonInput={(e) => setDraft(e.detail.value ?? "")}
           onIonBlur={commit}
           onKeyDown={(e) => {
@@ -56,19 +58,23 @@ export function NewItemPlaceholder({ disabled, onCommit }: NewItemPlaceholderPro
             }
           }}
         />
-      </IonItem>
+      </div>
     );
   }
 
   return (
-    <IonItem
-      button
-      detail={false}
+    <button
+      type="button"
       disabled={disabled}
-      className="opacity-50"
       onClick={activate}
+      className={[
+        "m-0 w-full text-left px-3 py-2.5 text-sm text-[var(--ion-color-medium)]",
+        LIST_ITEM_CARD,
+        "border-dashed opacity-80",
+        disabled ? "cursor-not-allowed" : "cursor-pointer active:opacity-70",
+      ].join(" ")}
     >
-      <IonLabel color="medium">New item…</IonLabel>
-    </IonItem>
+      New item…
+    </button>
   );
 }

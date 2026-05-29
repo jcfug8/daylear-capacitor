@@ -1,7 +1,7 @@
-import { IonButton, IonIcon, IonNote, IonSpinner, IonText, useIonAlert } from "@ionic/react";
-import { addOutline } from "ionicons/icons";
+import { IonNote, IonSpinner, IonText, useIonAlert } from "@ionic/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { PageHeader } from "../../components/PageHeader";
 import { trpcErrorMessage } from "../../lib/trpc-errors";
 import { trpc } from "../../lib/trpc";
 import { CreateListModal } from "./components/CreateListModal";
@@ -51,18 +51,11 @@ export function ListsIndexView() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <IonText>
-          <h2 className="text-xl font-semibold m-0">Lists</h2>
-        </IonText>
-        <IonButton
-          fill="clear"
-          aria-label="Add list"
-          onClick={() => setCreateOpen(true)}
-        >
-          <IonIcon icon={addOutline} slot="icon-only" />
-        </IonButton>
-      </div>
+      <PageHeader
+        title="Lists"
+        addLabel="Add list"
+        onAdd={() => setCreateOpen(true)}
+      />
 
       <CreateListModal
         isOpen={createOpen}

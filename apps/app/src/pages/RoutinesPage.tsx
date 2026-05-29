@@ -1,4 +1,5 @@
 import { NameListContent } from "../components/NameListContent";
+import { PageHeader } from "../components/PageHeader";
 import { trpc } from "../lib/trpc";
 
 export function RoutinesPage() {
@@ -9,15 +10,18 @@ export function RoutinesPage() {
   });
 
   return (
-    <NameListContent
-      fieldLabel="New routine"
-      placeholder="Morning routine…"
-      emptyNote="No routines yet. Add one above."
-      loadingLabel="Loading routines…"
-      items={routines}
-      isLoading={isLoading}
-      isCreating={createRoutine.isPending}
-      onAdd={(name) => createRoutine.mutate({ name })}
-    />
+    <>
+      <PageHeader title="Routines" />
+      <NameListContent
+        fieldLabel="New routine"
+        placeholder="Morning routine…"
+        emptyNote="No routines yet. Add one above."
+        loadingLabel="Loading routines…"
+        items={routines}
+        isLoading={isLoading}
+        isCreating={createRoutine.isPending}
+        onAdd={(name) => createRoutine.mutate({ name })}
+      />
+    </>
   );
 }

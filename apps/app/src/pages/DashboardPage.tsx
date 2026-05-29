@@ -1,11 +1,10 @@
 import { IonNote, IonText } from "@ionic/react";
+import { PageHeader } from "../components/PageHeader";
 
 export function DashboardPage() {
   return (
     <>
-      <IonText>
-        <h2 className="text-xl font-semibold mb-2">Dashboard</h2>
-      </IonText>
+      <PageHeader title="Dashboard" />
       <IonText color="medium">
         <p className="mb-4">Your overview of routines, rewards, meals, and lists will live here.</p>
       </IonText>

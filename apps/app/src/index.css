@@ -14,6 +14,29 @@ body {
   --background: #ffffff;
 }
 
+ion-menu.app-side-menu {
+  --background: #ffffff;
+}
+
+ion-menu.app-side-menu::part(backdrop) {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+ion-menu.app-side-menu ion-content.app-side-menu-content {
+  --background: #ffffff;
+}
+
+ion-menu.app-side-menu ion-list {
+  background: transparent;
+}
+
+ion-menu.app-side-menu ion-item {
+  --background: transparent;
+  --background-focused: transparent;
+  --background-activated: rgba(0, 0, 0, 0.04);
+  --background-hover: rgba(0, 0, 0, 0.04);
+}
+
 ion-tab-bar ion-label.tab-bar-label {
   font-size: 0.625rem;
   letter-spacing: 0.01em;
@@ -43,4 +66,34 @@ ion-modal.manage-rewards-modal {
 
 ion-modal.manage-rewards-modal::part(content) {
   border-radius: 0;
+}
+
+/* List detail: transparent accordions; cards sit on page background */
+ion-accordion-group.list-sections-accordion {
+  margin-top: 0.5rem;
+  background: transparent;
+}
+
+ion-accordion-group.list-sections-accordion ion-accordion {
+  background: transparent;
+}
+
+ion-accordion-group.list-sections-accordion ion-accordion::part(content) {
+  background: transparent;
+}
+
+ion-accordion-group.list-sections-accordion .list-section-accordion-header {
+  --background: transparent;
+  --background-focused: transparent;
+  --background-activated: transparent;
+  --background-hover: transparent;
+  --border-width: 0;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --min-height: auto;
+}
+
+ion-accordion-group.list-sections-accordion .list-section-accordion-content {
+  background: transparent;
+  padding: 0.25rem 0 1rem;
 }

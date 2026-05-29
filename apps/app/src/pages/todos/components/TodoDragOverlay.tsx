@@ -14,7 +14,7 @@ function itemMeta(item: AssignedTodoItem) {
 export function TodoDragOverlay({ item, variant }: TodoDragOverlayProps) {
   if (variant === "card") {
     return (
-      <div className="bg-[var(--ion-background-color)] shadow-lg rounded-lg px-3 py-2.5 w-[min(85vw,17rem)]">
+      <div className="bg-white shadow-lg rounded-lg px-3 py-2.5 w-[min(85vw,17rem)]">
         <p
           className={[
             "m-0 text-sm font-medium",

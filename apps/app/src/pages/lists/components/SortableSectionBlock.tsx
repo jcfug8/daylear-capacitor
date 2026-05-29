@@ -33,7 +33,7 @@ export function SortableSectionBlock({
       };
 
   return (
-    <div ref={setNodeRef} data-list-section-row style={style} className="mt-6">
+    <div ref={setNodeRef} data-list-section-row style={style}>
       {children({ attributes, listeners, isDragging })}
     </div>
   );

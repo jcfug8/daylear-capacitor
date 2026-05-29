@@ -1,6 +1,13 @@
 import { DndContext, DragOverlay, MeasuringStrategy, closestCorners } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { IonNote, useIonAlert } from "@ionic/react";
+import {
+  IonAccordion,
+  IonAccordionGroup,
+  IonItem,
+  IonLabel,
+  IonNote,
+  useIonAlert,
+} from "@ionic/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { flushSync } from "react-dom";
 import { invalidateMemberPointsAfterCompletion } from "../../../lib/invalidate-member-points";
@@ -16,7 +23,6 @@ import {
   layoutToApplyInput,
   OTHER_BUCKET_COLLAPSE_KEY,
 } from "../lib/list-layout";
-import { CollapsibleBucketHeader } from "./CollapsibleBucketHeader";
 import type { ListLayoutState } from "../lib/list-layout";
 import {
   createOverlayDragAdjustModifier,
@@ -29,6 +35,7 @@ import type {
 } from "../lib/dnd-overlay-modifiers";
 import { sectionDndId } from "../lib/list-dnd";
 import type { ListDetail } from "../types";
+import { LIST_ITEM_CARD } from "../lib/list-item-card-styles";
 import { ListItemBucket } from "./ListItemBucket";
 import { ListItemModal } from "./ListItemModal";
 import { SectionHeader } from "./SectionHeader";
@@ -226,15 +233,6 @@ export function ListDetailEditor({
     };
   });
 
-  function toggleSectionCollapsed(sectionId: string) {
-    setCollapsedSectionIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(sectionId)) next.delete(sectionId);
-      else next.add(sectionId);
-      return next;
-    });
-  }
-
   function confirmDeleteSection(section: { id: string; name: string }) {
     presentAlert({
       header: "Delete section?",
@@ -259,6 +257,45 @@ export function ListDetailEditor({
   const activeSection = activeDragId?.startsWith("section:")
     ? layout.sections.find((s) => s.id === activeDragId.slice(8))
     : null;
+
+  const expandedAccordionValues = useMemo(() => {
+    if (sectionReorderActive) return [];
+    const values: string[] = [];
+    for (const section of layout.sections) {
+      if (!collapsedSectionIds.has(section.id)) {
+        values.push(section.id);
+      }
+    }
+    if (
+      uncategorizedBucket &&
+      !collapsedSectionIds.has(OTHER_BUCKET_COLLAPSE_KEY)
+    ) {
+      values.push(OTHER_BUCKET_COLLAPSE_KEY);
+    }
+    return values;
+  }, [
+    collapsedSectionIds,
+    layout.sections,
+    sectionReorderActive,
+    uncategorizedBucket,
+  ]);
+
+  function handleAccordionChange(event: CustomEvent) {
+    const raw = event.detail.value;
+    const expanded = Array.isArray(raw) ? raw : raw ? [String(raw)] : [];
+    const expandedSet = new Set(expanded);
+    const nextCollapsed = new Set<string>();
+
+    for (const section of layout.sections) {
+      if (!expandedSet.has(section.id)) {
+        nextCollapsed.add(section.id);
+      }
+    }
+    if (uncategorizedBucket && !expandedSet.has(OTHER_BUCKET_COLLAPSE_KEY)) {
+      nextCollapsed.add(OTHER_BUCKET_COLLAPSE_KEY);
+    }
+    setCollapsedSectionIds(nextCollapsed);
+  }
 
   const collapseAllSectionsForReorder = useCallback(() => {
     const expanded = new Set(
@@ -296,6 +333,7 @@ export function ListDetailEditor({
   }
 
   const bucketProps = {
+    familyMembers: family?.members ?? [],
     createItemPending: createItem.isPending,
     updateItemPending: updateItem.isPending,
     dragDisabled: itemDetailsOpen || sectionReorderActive,
@@ -351,45 +389,75 @@ export function ListDetailEditor({
         }}
       >
         {listHasSections ? (
-          <SortableContext items={sectionDndIds} strategy={verticalListSortingStrategy}>
-            {layout.sections.map((section) => {
-              const bucket = sectionBuckets.find((b) => b.sectionId === section.id);
-              if (!bucket) return null;
-              const collapsed =
-                sectionReorderActive || collapsedSectionIds.has(section.id);
+          <IonAccordionGroup
+            multiple
+            className="list-sections-accordion"
+            value={expandedAccordionValues}
+            onIonChange={handleAccordionChange}
+          >
+            <SortableContext items={sectionDndIds} strategy={verticalListSortingStrategy}>
+              {layout.sections.map((section) => {
+                const bucket = sectionBuckets.find((b) => b.sectionId === section.id);
+                if (!bucket) return null;
 
-              return (
-                <SortableSectionBlock
-                  key={section.id}
-                  sectionId={section.id}
-                  dragDisabled={itemDetailsOpen}
-                >
-                  {(shell) => (
-                    <>
-                      <SectionHeader
-                        {...shell}
-                        name={section.name}
-                        collapsed={collapsed}
-                        onToggleCollapsed={() => toggleSectionCollapsed(section.id)}
-                        onPrepareReorder={prepareSectionReorder}
-                        onRename={(name) => updateSection.mutate({ id: section.id, name })}
-                        onDelete={() =>
-                          confirmDeleteSection({ id: section.id, name: section.name })
-                        }
-                      />
-                      {!collapsed && (
-                        <ListItemBucket
-                          bucket={bucket}
-                          {...bucketProps}
-                          onCreateItem={(name) => createItemInSection(section.id, name)}
+                return (
+                  <SortableSectionBlock
+                    key={section.id}
+                    sectionId={section.id}
+                    dragDisabled={itemDetailsOpen}
+                  >
+                    {(shell) => (
+                      <IonAccordion value={section.id} disabled={sectionReorderActive}>
+                        <SectionHeader
+                          {...shell}
+                          name={section.name}
+                          onPrepareReorder={prepareSectionReorder}
+                          onRename={(name) =>
+                            updateSection.mutate({ id: section.id, name })
+                          }
+                          onDelete={() =>
+                            confirmDeleteSection({ id: section.id, name: section.name })
+                          }
                         />
-                      )}
-                    </>
-                  )}
-                </SortableSectionBlock>
-              );
-            })}
-          </SortableContext>
+                        <div slot="content" className="list-section-accordion-content">
+                          <ListItemBucket
+                            bucket={bucket}
+                            {...bucketProps}
+                            onCreateItem={(name) => createItemInSection(section.id, name)}
+                          />
+                        </div>
+                      </IonAccordion>
+                    )}
+                  </SortableSectionBlock>
+                );
+              })}
+            </SortableContext>
+
+            {uncategorizedBucket && (
+              <IonAccordion
+                value={OTHER_BUCKET_COLLAPSE_KEY}
+                disabled={sectionReorderActive}
+              >
+                <IonItem slot="header" lines="none" className="list-section-accordion-header">
+                  <IonLabel className="ion-text-wrap py-2">
+                    <h2 className="font-serif text-xl font-semibold m-0">
+                      {uncategorizedBucket.title}
+                    </h2>
+                    <p className="text-sm text-[var(--ion-color-medium)] m-0 mt-1 font-sans font-normal">
+                      Items not in any section
+                    </p>
+                  </IonLabel>
+                </IonItem>
+                <div slot="content" className="list-section-accordion-content">
+                  <ListItemBucket
+                    bucket={uncategorizedBucket}
+                    {...bucketProps}
+                    onCreateItem={(name) => createItemInSection(null, name)}
+                  />
+                </div>
+              </IonAccordion>
+            )}
+          </IonAccordionGroup>
         ) : (
           uncategorizedBucket && (
             <ListItemBucket
@@ -400,41 +468,19 @@ export function ListDetailEditor({
           )
         )}
 
-        {listHasSections && uncategorizedBucket && (
-          <>
-            <CollapsibleBucketHeader
-              title={uncategorizedBucket.title}
-              subtitle="Items not in any section"
-              collapsed={
-                sectionReorderActive ||
-                collapsedSectionIds.has(OTHER_BUCKET_COLLAPSE_KEY)
-              }
-              onToggleCollapsed={() => toggleSectionCollapsed(OTHER_BUCKET_COLLAPSE_KEY)}
-            />
-            {!(
-              sectionReorderActive ||
-              collapsedSectionIds.has(OTHER_BUCKET_COLLAPSE_KEY)
-            ) && (
-              <ListItemBucket
-                bucket={uncategorizedBucket}
-                {...bucketProps}
-                onCreateItem={(name) => createItemInSection(null, name)}
-              />
-            )}
-          </>
-        )}
-
         <OverlayDragAdjustMeasurer
           adjustRef={overlayDragAdjustRef}
           contextRef={overlayMeasureContextRef}
         />
         <DragOverlay adjustScale={false} modifiers={dragOverlayModifiers}>
           {activeItem ? (
-            <div className="bg-[var(--ion-background-color)] shadow-lg px-4 py-2 rounded w-full max-w-[min(100vw-2rem,32rem)]">
+            <div
+              className={`px-3 py-2.5 text-sm font-medium w-full max-w-[min(100vw-2rem,32rem)] ${LIST_ITEM_CARD}`}
+            >
               {activeItem.name}
             </div>
           ) : activeSection ? (
-            <div className="bg-[var(--ion-background-color)] shadow-lg px-4 py-2 rounded font-semibold w-full max-w-[min(100vw-2rem,32rem)]">
+            <div className="font-serif text-xl font-semibold px-1 py-2 w-full max-w-[min(100vw-2rem,32rem)]">
               {activeSection.name}
             </div>
           ) : null}

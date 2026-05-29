@@ -1,13 +1,10 @@
 import {
   IonContent,
-  IonHeader,
   IonIcon,
   IonLabel,
-  IonMenuButton,
   IonPage,
   IonTabBar,
   IonTabButton,
-  IonToolbar,
 } from "@ionic/react";
 import {
   calendarOutline,
@@ -39,11 +36,6 @@ export function AppLayout() {
     <>
       <AppMenu />
       <IonPage id="main-content">
-        <IonHeader>
-          <IonToolbar>
-            <IonMenuButton slot="start" />
-          </IonToolbar>
-        </IonHeader>
         <IonContent>
           <div className="ion-padding app-page-shell">
             <Outlet />

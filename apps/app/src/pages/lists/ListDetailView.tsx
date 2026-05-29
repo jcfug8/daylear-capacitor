@@ -63,7 +63,6 @@ export function ListDetailView() {
         listName={list.name}
         onBack={() => navigate("/lists")}
         onRename={(name) => updateList.mutate({ id: listId, name })}
-        onAddSection={() => addSectionRef.current?.()}
       />
 
       <ListDetailEditor

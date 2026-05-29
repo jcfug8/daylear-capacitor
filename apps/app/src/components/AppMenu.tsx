@@ -32,8 +32,8 @@ export function AppMenu() {
   }
 
   return (
-    <IonMenu contentId="main-content" type="overlay">
-      <IonContent>
+    <IonMenu contentId="main-content" type="overlay" className="app-side-menu">
+      <IonContent className="app-side-menu-content">
         <div className="flex min-h-full flex-col">
           <IonList lines="full">
             <IonMenuToggle>

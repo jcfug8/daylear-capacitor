@@ -5,9 +5,9 @@ import {
   IonList,
   IonListHeader,
   IonNote,
-  IonText,
 } from "@ionic/react";
 import { colorPaletteOutline, notificationsOutline } from "ionicons/icons";
+import { PageHeader } from "../components/PageHeader";
 import { authClient } from "../lib/auth-client";
 import { trpc } from "../lib/trpc";
 import { UserAvatar } from "../components/UserAvatar";
@@ -22,11 +22,8 @@ export function AccountPage() {
 
   return (
     <>
-      <IonText>
-        <h2 className="text-xl font-semibold mb-4">Account</h2>
-      </IonText>
-
-      <IonList lines="full" className="mb-4">
+      <PageHeader title="Account" />
+      <IonList lines="full" className="mb-4 mt-0">
         <IonItem>
           <UserAvatar name={name} image={image} />
           <IonLabel>
