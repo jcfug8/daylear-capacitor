@@ -11,7 +11,7 @@ type SortableTodoCardProps = {
   dragDisabled?: boolean;
   updatePending?: boolean;
   onOpen?: () => void;
-  onToggleComplete?: (completed: boolean) => void;
+  onToggleComplete?: () => void;
 };
 
 export function SortableTodoCard({

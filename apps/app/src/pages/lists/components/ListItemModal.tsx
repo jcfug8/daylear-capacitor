@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import type { MemberNameFields } from "../../../lib/member-display-name";
 import { trpcErrorMessage } from "../../../lib/trpc-errors";
 import { trpc } from "../../../lib/trpc";
+import { isListItemCompleted } from "../../../lib/list-item-completion";
 import type { ListItemDetail, ListItemFormValues } from "../lib/list-item-form";
 import { ListItemForm } from "./ListItemForm";
 
@@ -28,7 +29,7 @@ type ListItemModalEditProps = ListItemModalBaseProps & {
   item: ListItemDetail | null;
   listId: string;
   onSaveName: (name: string) => void;
-  onToggleComplete: (completed: boolean) => void;
+  onToggleComplete: (complete: boolean) => void;
   onChangePoints: (points: number) => void;
   onChangeSection: (sectionId: string | null) => void;
   onSetAssignees: (memberIds: string[]) => void;
@@ -120,7 +121,7 @@ export function ListItemModal(props: ListItemModalProps) {
   }
 
   function saveNameIfChanged() {
-    if (mode !== "edit" || !props.item) return;
+    if (mode !== "edit" || !props.item || isListItemCompleted(props.item)) return;
     const trimmed = name.trim();
     if (!trimmed) {
       setName(props.item.name);
@@ -147,7 +148,7 @@ export function ListItemModal(props: ListItemModalProps) {
       : editItem
         ? {
             name,
-            completed: editItem.completed,
+            completedByMemberId: editItem.completedByMemberId,
             points: editItem.points,
             sectionId: editItem.sectionId,
             assigneeIds: editItem.assigneeIds,
@@ -155,7 +156,7 @@ export function ListItemModal(props: ListItemModalProps) {
           }
         : {
             name: "",
-            completed: false,
+            completedByMemberId: null,
             points: 0,
             sectionId: null,
             assigneeIds: [],
@@ -167,10 +168,9 @@ export function ListItemModal(props: ListItemModalProps) {
       props.onValuesChange(patch);
       return;
     }
-    if (!editItem) return;
+    if (!editItem || isListItemCompleted(editItem)) return;
 
     if (patch.name !== undefined) setName(patch.name);
-    if (patch.completed !== undefined) props.onToggleComplete(patch.completed);
     if (patch.points !== undefined) props.onChangePoints(patch.points);
     if (patch.sectionId !== undefined) props.onChangeSection(patch.sectionId);
     if (patch.assigneeIds !== undefined) props.onSetAssignees(patch.assigneeIds);
@@ -204,6 +204,7 @@ export function ListItemModal(props: ListItemModalProps) {
             onValuesChange={handleValuesChange}
             onAddSection={listId ? promptAddSection : undefined}
             onDelete={mode === "edit" ? confirmDelete : undefined}
+            onToggleComplete={mode === "edit" ? props.onToggleComplete : undefined}
           />
         )}
       </IonContent>

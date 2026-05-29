@@ -2,6 +2,7 @@ import { IonCheckbox, IonIcon, IonItem, IonLabel } from "@ionic/react";
 import { personOutline } from "ionicons/icons";
 import { useRef } from "react";
 import { ItemPointsLabel } from "../../../components/ItemPointsLabel";
+import { isListItemCompleted } from "../../../lib/list-item-completion";
 import { useItemRowGestures } from "../../utils/dnd/hooks/useItemRowGestures";
 import { composeDraggableListeners } from "../../utils/dnd/lib/compose-pointer-listeners";
 import {
@@ -13,7 +14,7 @@ import type { SortableItemShellProps } from "./SortableItemWrapper";
 type ListItem = {
   id: string;
   name: string;
-  completed: boolean;
+  completedByMemberId: string | null;
   points: number;
   assigneeIds: string[];
 };
@@ -22,7 +23,7 @@ type ListItemRowProps = SortableItemShellProps & {
   item: ListItem;
   onRename: (name: string) => void;
   onOpenDetails: () => void;
-  onToggleComplete: (completed: boolean) => void;
+  onToggleComplete: (itemId: string) => void;
   updatePending?: boolean;
 };
 
@@ -38,15 +39,18 @@ export function ListItemRow({
   listeners,
 }: ListItemRowProps) {
   const titleRef = useRef<InlineEditableTextHandle>(null);
+  const isCompleted = isListItemCompleted(item);
 
   const gestures = useItemRowGestures({
-    onShortPress: () => titleRef.current?.startEditing(),
+    onShortPress: () => {
+      if (!isCompleted) titleRef.current?.startEditing();
+    },
     onLongPress: onOpenDetails,
   });
 
   const composedListeners = composeDraggableListeners(listeners, gestures);
 
-  const titleClassName = item.completed
+  const titleClassName = isCompleted
     ? "font-normal line-through text-[var(--ion-color-medium)]"
     : "font-normal";
 
@@ -61,14 +65,14 @@ export function ListItemRow({
       {...composedListeners}
       className="touch-manipulation"
     >
-      <IonItem className={`items-center ${item.completed ? "opacity-70" : ""}`} lines="full">
+      <IonItem className={`items-center ${isCompleted ? "opacity-70" : ""}`} lines="full">
         <IonCheckbox
           slot="start"
           data-no-item-gesture
-          checked={item.completed}
+          checked={isCompleted}
           disabled={updatePending}
           onPointerDown={(e) => e.stopPropagation()}
-          onIonChange={(e) => onToggleComplete(e.detail.checked)}
+          onIonChange={() => onToggleComplete(item.id)}
         />
         <IonLabel className="ion-text-wrap min-w-0">
           <InlineEditableText

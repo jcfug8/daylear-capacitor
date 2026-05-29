@@ -8,7 +8,7 @@ type TodoSwimLanesBoardProps = {
   dragDisabled?: boolean;
   onOpenItem: (item: AssignedTodoItem) => void;
   onAddItem: (assigneeId: string) => void;
-  onToggleComplete: (itemId: string, completed: boolean) => void;
+  onToggleComplete: (item: AssignedTodoItem, laneAssigneeId: string) => void;
   updatePending?: boolean;
   addDisabled?: boolean;
 };

@@ -3,6 +3,9 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { IonNote, useIonAlert } from "@ionic/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { flushSync } from "react-dom";
+import { invalidateMemberPointsAfterCompletion } from "../../../lib/invalidate-member-points";
+import { isListItemCompleted } from "../../../lib/list-item-completion";
+import { useCompleteListItem } from "../../../hooks/useCompleteListItem";
 import type { MemberNameFields } from "../../../lib/member-display-name";
 import { trpcErrorMessage } from "../../../lib/trpc-errors";
 import { trpc } from "../../../lib/trpc";
@@ -45,6 +48,7 @@ export function ListDetailEditor({
   addSectionRef,
 }: ListDetailEditorProps) {
   const [presentAlert] = useIonAlert();
+  const { completeListItem } = useCompleteListItem();
   const utils = trpc.useUtils();
   const [layout, setLayout] = useState<ListLayoutState>(() =>
     buildLayoutFromListDetail(list),
@@ -130,6 +134,36 @@ export function ListDetailEditor({
   function openItemDetails(itemId: string) {
     setActiveDragId(null);
     setDetailItemId(itemId);
+  }
+
+  function setItemCompletion(itemId: string, completedByMemberId: string | null) {
+    const item = list.items.find((entry) => entry.id === itemId);
+    const itemPoints = item?.points ?? 0;
+    updateItem.mutate(
+      { id: itemId, completedByMemberId },
+      {
+        onSuccess: async () => {
+          await invalidateMemberPointsAfterCompletion(utils, itemPoints);
+        },
+      },
+    );
+  }
+
+  function toggleItemComplete(itemId: string) {
+    const item = list.items.find((entry) => entry.id === itemId);
+    if (!item) return;
+
+    if (isListItemCompleted(item)) {
+      setItemCompletion(itemId, null);
+      return;
+    }
+
+    completeListItem({
+      itemId,
+      assigneeIds: item.assigneeIds,
+      familyMembers: family?.members ?? [],
+      onComplete: setItemCompletion,
+    });
   }
 
   const listHasSections = layout.sections.length > 0;
@@ -266,10 +300,12 @@ export function ListDetailEditor({
     updateItemPending: updateItem.isPending,
     dragDisabled: itemDetailsOpen || sectionReorderActive,
     onOpenItemDetails: openItemDetails,
-    onRenameItem: (itemId: string, name: string) =>
-      updateItem.mutate({ id: itemId, name }),
-    onToggleComplete: (itemId: string, completed: boolean) =>
-      updateItem.mutate({ id: itemId, completed }),
+    onRenameItem: (itemId: string, name: string) => {
+      const item = list.items.find((entry) => entry.id === itemId);
+      if (item && isListItemCompleted(item)) return;
+      updateItem.mutate({ id: itemId, name });
+    },
+    onToggleComplete: (itemId: string) => toggleItemComplete(itemId),
   };
 
   return (
@@ -420,20 +456,39 @@ export function ListDetailEditor({
         isOpen={!!detailItemId}
         onClose={() => setDetailItemId(null)}
         pending={pending}
-        onSaveName={(name) => detailItem && updateItem.mutate({ id: detailItem.id, name })}
-        onToggleComplete={(completed) =>
-          detailItem && updateItem.mutate({ id: detailItem.id, completed })
-        }
-        onChangePoints={(points) =>
-          detailItem && updateItem.mutate({ id: detailItem.id, points })
-        }
-        onChangeSection={(sectionId) =>
-          detailItem && updateItem.mutate({ id: detailItem.id, sectionId })
-        }
-        onSetAssignees={(memberIds) =>
-          detailItem && setAssignees.mutate({ id: detailItem.id, memberIds })
-        }
-        onDelete={() => detailItem && deleteItem.mutate({ id: detailItem.id })}
+        onSaveName={(name) => {
+          if (!detailItem || isListItemCompleted(detailItem)) return;
+          updateItem.mutate({ id: detailItem.id, name });
+        }}
+        onToggleComplete={(complete) => {
+          if (!detailItem) return;
+          if (complete) {
+            completeListItem({
+              itemId: detailItem.id,
+              assigneeIds: detailItem.assigneeIds,
+              familyMembers: family?.members ?? [],
+              onComplete: setItemCompletion,
+            });
+          } else {
+            setItemCompletion(detailItem.id, null);
+          }
+        }}
+        onChangePoints={(points) => {
+          if (!detailItem || isListItemCompleted(detailItem)) return;
+          updateItem.mutate({ id: detailItem.id, points });
+        }}
+        onChangeSection={(sectionId) => {
+          if (!detailItem || isListItemCompleted(detailItem)) return;
+          updateItem.mutate({ id: detailItem.id, sectionId });
+        }}
+        onSetAssignees={(memberIds) => {
+          if (!detailItem || isListItemCompleted(detailItem)) return;
+          setAssignees.mutate({ id: detailItem.id, memberIds });
+        }}
+        onDelete={() => {
+          if (!detailItem) return;
+          deleteItem.mutate({ id: detailItem.id });
+        }}
       />
     </>
   );

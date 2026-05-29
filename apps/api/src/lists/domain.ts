@@ -56,7 +56,7 @@ export const createListItemInput = z.object({
 
 export const updateListItemInput = itemIdInput.extend({
   name: z.string().min(1).max(500).optional(),
-  completed: z.boolean().optional(),
+  completedByMemberId: z.string().uuid().nullable().optional(),
   points: listItemPointsSchema.optional(),
   sectionId: z.string().uuid().nullable().optional(),
 });
@@ -241,15 +241,41 @@ export async function updateListItem(
     await assertSectionInList(familyId, existing.listId, input.sectionId);
   }
 
+  const isCompleted = existing.completedByMemberId !== null;
+  const isCompletionOnlyUpdate =
+    input.completedByMemberId !== undefined &&
+    input.name === undefined &&
+    input.points === undefined &&
+    input.sectionId === undefined;
+
+  if (isCompleted && !isCompletionOnlyUpdate) {
+    throw new Error("ITEM_COMPLETED");
+  }
+
+  if (input.completedByMemberId) {
+    const members = await familiesPersistence.listMembersByFamilyId(familyId);
+    const memberIds = new Set(members.map((m) => m.id));
+    if (!memberIds.has(input.completedByMemberId)) {
+      throw new Error("MEMBER_NOT_FOUND");
+    }
+  }
+
   const patch: {
     name?: string;
-    completed?: boolean;
+    completedByMemberId?: string | null;
     points?: number;
     sectionId?: string | null;
     sortOrder?: number;
   } = {};
   if (input.name !== undefined) patch.name = input.name;
-  if (input.completed !== undefined) patch.completed = input.completed;
+  if (input.completedByMemberId !== undefined) {
+    await persistence.applyCompletionPointsChange(
+      existing.completedByMemberId,
+      input.completedByMemberId,
+      existing.points,
+    );
+    patch.completedByMemberId = input.completedByMemberId;
+  }
   if (input.points !== undefined) patch.points = input.points;
   if (input.sectionId !== undefined) {
     patch.sectionId = input.sectionId;
@@ -296,6 +322,10 @@ export async function setListItemAssignees(
   const existing = await persistence.findItemById(familyId, input.id);
   if (!existing) {
     throw new Error("ITEM_NOT_FOUND");
+  }
+
+  if (existing.completedByMemberId !== null) {
+    throw new Error("ITEM_COMPLETED");
   }
 
   const includesAnyone = input.memberIds.includes(ANYONE_ASSIGNEE_ID);

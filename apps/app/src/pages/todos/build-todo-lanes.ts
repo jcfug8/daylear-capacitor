@@ -1,4 +1,5 @@
 import { ANYONE_ASSIGNEE_ID } from "../../lib/assignees";
+import { isListItemCompleted } from "../../lib/list-item-completion";
 import {
   memberDisplayName,
   type MemberNameFields,
@@ -7,12 +8,13 @@ import {
 export type AssignedTodoItem = {
   id: string;
   name: string;
-  completed: boolean;
+  completedByMemberId: string | null;
   points: number;
   listId: string;
   listName: string;
   sectionName: string | null;
   assigneeId: string;
+  assigneeIds: string[];
 };
 
 export type TodoLane = {
@@ -20,6 +22,8 @@ export type TodoLane = {
   label: string;
   items: AssignedTodoItem[];
 };
+
+export { isListItemCompleted as isTodoItemCompleted };
 
 export function buildTodoLanes(
   members: MemberNameFields[],

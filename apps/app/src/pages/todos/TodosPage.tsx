@@ -19,7 +19,7 @@ export function TodosPage() {
   const { data: family, isLoading: familyLoading } = trpc.families.current.useQuery();
   const { data: todos, isLoading: todosLoading } = trpc.todos.list.useQuery();
 
-  const itemModal = useTodoItemDetailModal();
+  const itemModal = useTodoItemDetailModal(family?.members ?? []);
 
   const baseLanes = useMemo(() => {
     if (!family) return [];
@@ -105,7 +105,9 @@ export function TodosPage() {
                 dragDisabled={dragDisabled}
                 onOpenItem={itemModal.openItem}
                 onAddItem={itemModal.openCreate}
-                onToggleComplete={itemModal.toggleComplete}
+                onToggleComplete={(item, laneAssigneeId) =>
+                  itemModal.toggleComplete(item, laneAssigneeId)
+                }
                 updatePending={itemModal.pending || reorderPending}
                 addDisabled={addDisabled}
               />
@@ -115,7 +117,9 @@ export function TodosPage() {
                 dragDisabled={dragDisabled}
                 onOpenItem={itemModal.openItem}
                 onAddItem={itemModal.openCreate}
-                onToggleComplete={itemModal.toggleComplete}
+                onToggleComplete={(item, laneAssigneeId) =>
+                  itemModal.toggleComplete(item, laneAssigneeId)
+                }
                 updatePending={itemModal.pending || reorderPending}
                 addDisabled={addDisabled}
               />

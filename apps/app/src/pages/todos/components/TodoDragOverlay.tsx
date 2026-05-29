@@ -1,4 +1,5 @@
 import { IonLabel } from "@ionic/react";
+import { isListItemCompleted } from "../../../lib/list-item-completion";
 import type { AssignedTodoItem } from "../build-todo-lanes";
 
 type TodoDragOverlayProps = {
@@ -17,7 +18,9 @@ export function TodoDragOverlay({ item, variant }: TodoDragOverlayProps) {
         <p
           className={[
             "m-0 text-sm font-medium",
-            item.completed ? "line-through text-[var(--ion-color-medium)]" : "",
+            isListItemCompleted(item)
+              ? "line-through text-[var(--ion-color-medium)]"
+              : "",
           ]
             .filter(Boolean)
             .join(" ")}

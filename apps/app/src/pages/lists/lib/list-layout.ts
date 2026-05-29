@@ -9,7 +9,7 @@ export type ListLayoutItem = {
   sectionId: string | null;
   sortOrder: number;
   name: string;
-  completed: boolean;
+  completedByMemberId: string | null;
   points: number;
   assigneeIds: string[];
 };

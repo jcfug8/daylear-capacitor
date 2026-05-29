@@ -1,5 +1,6 @@
 import { IonButton, IonIcon, IonText } from "@ionic/react";
 import { addOutline } from "ionicons/icons";
+import { isListItemCompleted } from "../../../lib/list-item-completion";
 import type { TodoLane } from "../build-todo-lanes";
 
 type TodoAssigneeHeaderProps = {
@@ -9,7 +10,7 @@ type TodoAssigneeHeaderProps = {
 };
 
 export function TodoAssigneeHeader({ lane, onAdd, addDisabled }: TodoAssigneeHeaderProps) {
-  const openCount = lane.items.filter((item) => !item.completed).length;
+  const openCount = lane.items.filter((item) => !isListItemCompleted(item)).length;
 
   const status =
     openCount === 0

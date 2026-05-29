@@ -10,7 +10,7 @@ type TodoListViewProps = {
   dragDisabled?: boolean;
   onOpenItem: (item: AssignedTodoItem) => void;
   onAddItem: (assigneeId: string) => void;
-  onToggleComplete: (itemId: string, completed: boolean) => void;
+  onToggleComplete: (item: AssignedTodoItem, laneAssigneeId: string) => void;
   updatePending?: boolean;
   addDisabled?: boolean;
 };
@@ -55,7 +55,7 @@ export function TodoListView({
                     dragDisabled={dragDisabled}
                     updatePending={updatePending}
                     onOpen={() => onOpenItem(item)}
-                    onToggleComplete={(completed) => onToggleComplete(item.id, completed)}
+                    onToggleComplete={() => onToggleComplete(item, lane.assigneeId)}
                   />
                 ))}
               </IonList>

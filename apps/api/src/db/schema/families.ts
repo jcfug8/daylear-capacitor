@@ -1,4 +1,5 @@
 import {
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -29,6 +30,7 @@ export const familyMember = pgTable(
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
     displayName: text("display_name").notNull(),
     memberType: memberTypeEnum("member_type").notNull(),
+    points: integer("points").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

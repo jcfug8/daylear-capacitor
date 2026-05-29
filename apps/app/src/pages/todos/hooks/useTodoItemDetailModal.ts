@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import { useCompleteListItem } from "../../../hooks/useCompleteListItem";
+import { isListItemCompleted } from "../../../lib/list-item-completion";
+import type { MemberNameFields } from "../../../lib/member-display-name";
+import { invalidateMemberPointsAfterCompletion } from "../../../lib/invalidate-member-points";
 import { trpcErrorMessage } from "../../../lib/trpc-errors";
 import { trpc } from "../../../lib/trpc";
 import type { ListItemFormValues } from "../../lists/lib/list-item-form";
@@ -13,8 +17,9 @@ type ModalState =
   | { type: "edit"; listId: string; itemId: string }
   | { type: "create" };
 
-export function useTodoItemDetailModal() {
+export function useTodoItemDetailModal(familyMembers: MemberNameFields[] = []) {
   const utils = trpc.useUtils();
+  const { completeListItem } = useCompleteListItem();
   const [modal, setModal] = useState<ModalState>({ type: "closed" });
   const [createDraft, setCreateDraft] = useState<ListItemFormValues | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -103,8 +108,34 @@ export function useTodoItemDetailModal() {
     setError(null);
   }
 
-  function toggleComplete(itemId: string, completed: boolean) {
-    updateItem.mutate({ id: itemId, completed });
+  function setCompletion(
+    itemId: string,
+    completedByMemberId: string | null,
+    itemPoints: number,
+  ) {
+    updateItem.mutate(
+      { id: itemId, completedByMemberId },
+      {
+        onSuccess: async () => {
+          await invalidateMemberPointsAfterCompletion(utils, itemPoints);
+        },
+      },
+    );
+  }
+
+  function toggleComplete(item: AssignedTodoItem, laneAssigneeId?: string) {
+    if (isListItemCompleted(item)) {
+      setCompletion(item.id, null, item.points);
+      return;
+    }
+
+    completeListItem({
+      itemId: item.id,
+      assigneeIds: item.assigneeIds,
+      laneAssigneeId,
+      familyMembers,
+      onComplete: (itemId, memberId) => setCompletion(itemId, memberId, item.points),
+    });
   }
 
   function patchCreateDraft(patch: Partial<ListItemFormValues>) {
@@ -135,10 +166,6 @@ export function useTodoItemDetailModal() {
         memberIds: createDraft.assigneeIds,
       });
 
-      if (createDraft.completed) {
-        await updateItem.mutateAsync({ id: item.id, completed: true });
-      }
-
       await utils.todos.list.invalidate();
       await utils.lists.get.invalidate({ id: createDraft.listId });
       closeModal();
@@ -168,23 +195,33 @@ export function useTodoItemDetailModal() {
     patchCreateDraft,
     submitCreate,
     onSaveName: (name: string) => {
-      if (modal.type !== "edit") return;
+      if (modal.type !== "edit" || !detailItem || isListItemCompleted(detailItem)) return;
       updateItem.mutate({ id: modal.itemId, name });
     },
-    onToggleComplete: (completed: boolean) => {
-      if (modal.type !== "edit") return;
-      updateItem.mutate({ id: modal.itemId, completed });
+    onToggleComplete: (complete: boolean) => {
+      if (modal.type !== "edit" || !detailItem) return;
+      if (complete) {
+        completeListItem({
+          itemId: detailItem.id,
+          assigneeIds: detailItem.assigneeIds,
+          familyMembers,
+          onComplete: (itemId, memberId) =>
+            setCompletion(itemId, memberId, detailItem.points),
+        });
+      } else {
+        setCompletion(detailItem.id, null, detailItem.points);
+      }
     },
     onChangePoints: (points: number) => {
-      if (modal.type !== "edit") return;
+      if (modal.type !== "edit" || !detailItem || isListItemCompleted(detailItem)) return;
       updateItem.mutate({ id: modal.itemId, points });
     },
     onChangeSection: (sectionId: string | null) => {
-      if (modal.type !== "edit") return;
+      if (modal.type !== "edit" || !detailItem || isListItemCompleted(detailItem)) return;
       updateItem.mutate({ id: modal.itemId, sectionId });
     },
     onSetAssignees: (memberIds: string[]) => {
-      if (modal.type !== "edit") return;
+      if (modal.type !== "edit" || !detailItem || isListItemCompleted(detailItem)) return;
       setAssignees.mutate({ id: modal.itemId, memberIds });
     },
     onDelete: () => {

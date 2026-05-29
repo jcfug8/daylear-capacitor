@@ -1,6 +1,5 @@
 import { relations, sql } from "drizzle-orm";
 import {
-  boolean,
   index,
   integer,
   pgTable,
@@ -41,7 +40,9 @@ export const listItems = pgTable("list_items", {
     onDelete: "set null",
   }),
   name: text("name").notNull(),
-  completed: boolean("completed").notNull().default(false),
+  completedByMemberId: uuid("completed_by_member_id").references(() => familyMember.id, {
+    onDelete: "set null",
+  }),
   points: integer("points").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -91,6 +92,10 @@ export const listItemsRelations = relations(listItems, ({ one, many }) => ({
   section: one(listSections, {
     fields: [listItems.sectionId],
     references: [listSections.id],
+  }),
+  completedByMember: one(familyMember, {
+    fields: [listItems.completedByMemberId],
+    references: [familyMember.id],
   }),
   assignees: many(listItemAssignees),
 }));

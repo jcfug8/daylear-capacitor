@@ -8,6 +8,7 @@ import {
   IonSelectOption,
 } from "@ionic/react";
 import { ANYONE_ASSIGNEE_ID } from "../../../lib/assignees";
+import { isListItemCompleted } from "../../../lib/list-item-completion";
 import {
   memberDisplayName,
   type MemberNameFields,
@@ -30,6 +31,7 @@ type ListItemFormProps = {
   onValuesChange: (patch: Partial<ListItemFormValues>) => void;
   onAddSection?: () => void;
   onDelete?: () => void;
+  onToggleComplete?: (complete: boolean) => void;
 };
 
 export function ListItemForm({
@@ -43,9 +45,12 @@ export function ListItemForm({
   onValuesChange,
   onAddSection,
   onDelete,
+  onToggleComplete,
 }: ListItemFormProps) {
   const showListPicker = mode === "create" && lists && lists.length > 0;
   const showSectionField = !!listId;
+  const isCompleted = isListItemCompleted(values);
+  const fieldsDisabled = pending || (mode === "edit" && isCompleted);
 
   return (
     <IonList lines="full">
@@ -84,20 +89,22 @@ export function ListItemForm({
           label="Title"
           labelPlacement="stacked"
           value={values.name}
-          disabled={pending}
+          disabled={fieldsDisabled}
           onIonInput={(e) => onValuesChange({ name: e.detail.value ?? "" })}
         />
       </IonItem>
 
-      <IonItem>
-        <IonCheckbox
-          checked={values.completed}
-          disabled={pending}
-          onIonChange={(e) => onValuesChange({ completed: e.detail.checked })}
-        >
-          Completed
-        </IonCheckbox>
-      </IonItem>
+      {mode === "edit" && onToggleComplete && (
+        <IonItem>
+          <IonCheckbox
+            checked={isCompleted}
+            disabled={pending}
+            onIonChange={(e) => onToggleComplete(e.detail.checked)}
+          >
+            Completed
+          </IonCheckbox>
+        </IonItem>
+      )}
 
       <IonItem>
         <IonInput
@@ -107,7 +114,7 @@ export function ListItemForm({
           inputmode="numeric"
           min={0}
           value={String(values.points)}
-          disabled={pending}
+          disabled={fieldsDisabled}
           onIonInput={(e) =>
             onValuesChange({ points: parsePointsInput(e.detail.value ?? "") })
           }
@@ -121,7 +128,7 @@ export function ListItemForm({
             labelPlacement="stacked"
             interface="popover"
             value={values.sectionId ?? ""}
-            disabled={pending}
+            disabled={fieldsDisabled}
             onIonChange={(e) => {
               const raw = e.detail.value ? String(e.detail.value) : "";
               if (raw === ADD_SECTION_SELECT_VALUE) {
@@ -154,7 +161,7 @@ export function ListItemForm({
             multiple
             interface="popover"
             value={values.assigneeIds}
-            disabled={pending}
+            disabled={fieldsDisabled}
             onIonChange={(e) => {
               const value = e.detail.value;
               const selectedIds = Array.isArray(value)

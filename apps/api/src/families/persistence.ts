@@ -24,6 +24,7 @@ export type FamilyMember = {
   /** Auth user name when `userId` is set. */
   userName: string | null;
   memberType: "parent" | "child";
+  points: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -62,6 +63,7 @@ function toMember(
     displayName: row.displayName,
     userName,
     memberType: row.memberType,
+    points: row.points,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

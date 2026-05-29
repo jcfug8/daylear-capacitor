@@ -6,6 +6,7 @@ import {
   listSections,
   lists,
 } from "../db/schema/lists.js";
+import { adjustMemberPoints } from "../points/persistence.js";
 
 const ANYONE_ASSIGNEE_ID = "anyone";
 
@@ -31,7 +32,7 @@ export type ListItem = {
   listId: string;
   sectionId: string | null;
   name: string;
-  completed: boolean;
+  completedByMemberId: string | null;
   points: number;
   sortOrder: number;
   assigneeIds: string[];
@@ -48,12 +49,13 @@ export type ListDetail = List & {
 export type AssignedTodoItem = {
   id: string;
   name: string;
-  completed: boolean;
+  completedByMemberId: string | null;
   points: number;
   listId: string;
   listName: string;
   sectionName: string | null;
   assigneeId: string;
+  assigneeIds: string[];
 };
 
 function toList(row: typeof lists.$inferSelect): List {
@@ -86,7 +88,7 @@ function toListItem(
     listId: row.listId,
     sectionId: row.sectionId,
     name: row.name,
-    completed: row.completed,
+    completedByMemberId: row.completedByMemberId,
     points: row.points,
     sortOrder: row.sortOrder,
     assigneeIds,
@@ -121,7 +123,7 @@ export async function listAssignedTodosByFamilyId(
     .select({
       id: listItems.id,
       name: listItems.name,
-      completed: listItems.completed,
+      completedByMemberId: listItems.completedByMemberId,
       points: listItems.points,
       listId: lists.id,
       listName: lists.name,
@@ -139,15 +141,19 @@ export async function listAssignedTodosByFamilyId(
       asc(listItems.name),
     );
 
+  const itemIds = [...new Set(rows.map((row) => row.id))];
+  const assigneeMap = await assigneeIdsByItemIds(itemIds);
+
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
-    completed: row.completed,
+    completedByMemberId: row.completedByMemberId,
     points: row.points,
     listId: row.listId,
     listName: row.listName,
     sectionName: row.sectionName,
     assigneeId: row.assigneeId ?? ANYONE_ASSIGNEE_ID,
+    assigneeIds: assigneeMap.get(row.id) ?? [],
   }));
 }
 
@@ -376,11 +382,28 @@ export async function applyLayout(
   });
 }
 
+export async function applyCompletionPointsChange(
+  previousCompleterId: string | null,
+  nextCompleterId: string | null,
+  points: number,
+): Promise<void> {
+  if (previousCompleterId === nextCompleterId) return;
+
+  await db.transaction(async (tx) => {
+    if (previousCompleterId) {
+      await adjustMemberPoints(tx, previousCompleterId, -points);
+    }
+    if (nextCompleterId) {
+      await adjustMemberPoints(tx, nextCompleterId, points);
+    }
+  });
+}
+
 export async function updateItem(
   itemId: string,
   patch: {
     name?: string;
-    completed?: boolean;
+    completedByMemberId?: string | null;
     points?: number;
     sectionId?: string | null;
     sortOrder?: number;

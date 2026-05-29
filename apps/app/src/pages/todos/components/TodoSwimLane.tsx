@@ -7,7 +7,7 @@ type TodoSwimLaneProps = {
   dragDisabled?: boolean;
   onOpenItem?: (item: AssignedTodoItem) => void;
   onAddItem?: (assigneeId: string) => void;
-  onToggleComplete?: (itemId: string, completed: boolean) => void;
+  onToggleComplete?: (item: AssignedTodoItem, laneAssigneeId: string) => void;
   updatePending?: boolean;
   addDisabled?: boolean;
 };
@@ -45,7 +45,11 @@ export function TodoSwimLane({
               dragDisabled={dragDisabled}
               updatePending={updatePending}
               onOpen={onOpenItem ? () => onOpenItem(item) : undefined}
-              onToggleComplete={(completed) => onToggleComplete?.(item.id, completed)}
+              onToggleComplete={
+                onToggleComplete
+                  ? () => onToggleComplete(item, lane.assigneeId)
+                  : undefined
+              }
             />
           ))
         )}

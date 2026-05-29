@@ -14,7 +14,7 @@ type ListItemBucketProps = {
   dragDisabled?: boolean;
   onOpenItemDetails: (itemId: string) => void;
   onRenameItem: (itemId: string, name: string) => void;
-  onToggleComplete: (itemId: string, completed: boolean) => void;
+  onToggleComplete: (itemId: string) => void;
   onCreateItem: (name: string) => void;
 };
 
@@ -50,9 +50,7 @@ export function ListItemBucket({
                   item={item}
                   onRename={(name) => onRenameItem(item.id, name)}
                   onOpenDetails={() => onOpenItemDetails(item.id)}
-                  onToggleComplete={(completed) =>
-                    onToggleComplete(item.id, completed)
-                  }
+                  onToggleComplete={() => onToggleComplete(item.id)}
                   updatePending={updateItemPending}
                 />
               )}
