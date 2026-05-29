@@ -1,20 +1,11 @@
-import { ANYONE_ASSIGNEE_ID } from "../../../lib/assignees";
-import { memberDisplayName, type MemberNameFields } from "../../../lib/member-display-name";
 import { formatItemPointsLabel } from "../../../lib/format-item-points";
+import type { MemberNameFields } from "../../../lib/member-display-name";
+import { resolveListItemAssignees } from "./list-item-assignees";
 
-export function listItemBadgeLabel(
+export function listItemPointsBadgeLabel(
   item: { assigneeIds: string[]; points: number },
   familyMembers: MemberNameFields[] = [],
 ): string | null {
-  if (item.assigneeIds.length > 0) {
-    if (item.assigneeIds.includes(ANYONE_ASSIGNEE_ID)) {
-      return "Anyone";
-    }
-    const member = familyMembers.find((m) => item.assigneeIds.includes(m.id));
-    if (member) {
-      return memberDisplayName(member);
-    }
-  }
-
+  if (resolveListItemAssignees(item.assigneeIds, familyMembers)) return null;
   return formatItemPointsLabel(item.points);
 }

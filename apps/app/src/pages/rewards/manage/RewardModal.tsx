@@ -42,11 +42,15 @@ export function RewardModal(props: RewardModalProps) {
   const { isOpen, onClose, family, pending, mode } = props;
   const [presentAlert] = useIonAlert();
   const [name, setName] = useState("");
+  const [points, setPoints] = useState(0);
 
   const editReward = mode === "edit" ? props.reward : null;
 
   useEffect(() => {
-    if (editReward) setName(editReward.name);
+    if (editReward) {
+      setName(editReward.name);
+      setPoints(editReward.points);
+    }
   }, [editReward]);
 
   function confirmDelete() {
@@ -80,12 +84,20 @@ export function RewardModal(props: RewardModalProps) {
     }
   }
 
+  function savePointsIfChanged() {
+    if (mode !== "edit" || !props.reward) return;
+    if (points !== props.reward.points) {
+      props.onChangePoints(points);
+    }
+  }
+
   function handleDone() {
     if (mode === "create") {
       props.onCreate();
       return;
     }
     saveNameIfChanged();
+    savePointsIfChanged();
     onClose();
   }
 
@@ -95,7 +107,7 @@ export function RewardModal(props: RewardModalProps) {
       : editReward
         ? {
             name,
-            points: editReward.points,
+            points,
             assigneeIds: editReward.assigneeIds,
           }
         : { name: "", points: 0, assigneeIds: [] };
@@ -107,7 +119,7 @@ export function RewardModal(props: RewardModalProps) {
     }
     if (!editReward) return;
     if (patch.name !== undefined) setName(patch.name);
-    if (patch.points !== undefined) props.onChangePoints(patch.points);
+    if (patch.points !== undefined) setPoints(patch.points);
     if (patch.assigneeIds !== undefined) props.onSetAssignees(patch.assigneeIds);
   }
 

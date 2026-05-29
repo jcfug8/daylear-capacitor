@@ -31,6 +31,8 @@ export const familyMember = pgTable(
     displayName: text("display_name").notNull(),
     memberType: memberTypeEnum("member_type").notNull(),
     points: integer("points").notNull().default(0),
+    avatarColor: text("avatar_color"),
+    avatarIcon: text("avatar_icon"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

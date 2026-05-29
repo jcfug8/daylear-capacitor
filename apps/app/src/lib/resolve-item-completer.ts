@@ -21,14 +21,14 @@ export function resolveItemCompleter(
     return { type: "member", memberId: laneAssigneeId };
   }
 
+  if (assigneeIds.includes(ANYONE_ASSIGNEE_ID)) {
+    return { type: "pick", memberIds: familyMemberIds };
+  }
+
   const memberAssignees = assigneeIds.filter((id) => id !== ANYONE_ASSIGNEE_ID);
 
   if (memberAssignees.length === 1) {
-    return { type: "member", memberId: memberAssignees[0] };
-  }
-
-  if (assigneeIds.includes(ANYONE_ASSIGNEE_ID)) {
-    return { type: "pick", memberIds: familyMemberIds };
+    return { type: "member", memberId: memberAssignees[0]! };
   }
 
   return { type: "pick", memberIds: memberAssignees };

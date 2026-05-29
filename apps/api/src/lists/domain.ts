@@ -329,23 +329,24 @@ export async function setListItemAssignees(
   }
 
   const includesAnyone = input.memberIds.includes(ANYONE_ASSIGNEE_ID);
-  if (includesAnyone && input.memberIds.length > 1) {
-    throw new Error("INVALID_ASSIGNEES");
-  }
+  const memberIdsOnly = [
+    ...new Set(input.memberIds.filter((id) => id !== ANYONE_ASSIGNEE_ID)),
+  ];
 
-  if (!includesAnyone && input.memberIds.length > 0) {
+  if (memberIdsOnly.length > 0) {
     const members = await familiesPersistence.listMembersByFamilyId(familyId);
-    const memberIds = new Set(members.map((m) => m.id));
-    for (const memberId of input.memberIds) {
-      if (!memberIds.has(memberId)) {
+    const validMemberIds = new Set(members.map((m) => m.id));
+    for (const memberId of memberIdsOnly) {
+      if (!validMemberIds.has(memberId)) {
         throw new Error("MEMBER_NOT_FOUND");
       }
     }
   }
 
-  const nextAssignees = includesAnyone
-    ? [null]
-    : (input.memberIds as string[]);
+  const nextAssignees: Array<string | null> = [
+    ...(includesAnyone ? [null] : []),
+    ...memberIdsOnly,
+  ];
   const updated = await persistence.setItemAssignees(
     familyId,
     input.id,

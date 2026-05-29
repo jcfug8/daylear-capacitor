@@ -8,6 +8,12 @@ import {
   requireUserId,
 } from "../shared/auth-context.js";
 import { normalizeEmail } from "../shared/email.js";
+import {
+  isMemberAvatarColorKey,
+  isMemberAvatarIconKey,
+  MEMBER_AVATAR_COLOR_KEYS,
+  MEMBER_AVATAR_ICON_KEYS,
+} from "./member-avatar.js";
 import * as persistence from "./persistence.js";
 
 export type FamilyCurrent = {
@@ -55,6 +61,18 @@ export const createMemberInput = z.object({
 });
 
 export const removeMemberInput = z.object({
+  memberId: z.string().uuid(),
+});
+
+export const updateMemberInput = z.object({
+  memberId: z.string().uuid(),
+  displayName: z.string().min(1).max(200).optional(),
+  memberType: z.enum(["parent", "child"]).optional(),
+  avatarColor: z.enum(MEMBER_AVATAR_COLOR_KEYS).nullable().optional(),
+  avatarIcon: z.enum(MEMBER_AVATAR_ICON_KEYS).nullable().optional(),
+});
+
+export const unlinkMemberLoginInput = z.object({
   memberId: z.string().uuid(),
 });
 
@@ -506,4 +524,116 @@ export async function removeMember(
   if (!removed) {
     throw new Error("MEMBER_NOT_FOUND");
   }
+}
+
+function assertAvatarPatch(input: z.infer<typeof updateMemberInput>): void {
+  if (
+    input.avatarColor !== undefined &&
+    input.avatarColor !== null &&
+    !isMemberAvatarColorKey(input.avatarColor)
+  ) {
+    throw new Error("INVALID_AVATAR");
+  }
+  if (
+    input.avatarIcon !== undefined &&
+    input.avatarIcon !== null &&
+    !isMemberAvatarIconKey(input.avatarIcon)
+  ) {
+    throw new Error("INVALID_AVATAR");
+  }
+}
+
+export async function updateMember(
+  ctx: AuthContext,
+  input: z.infer<typeof updateMemberInput>,
+): Promise<persistence.FamilyMember> {
+  const familyId = requireFamilyId(ctx);
+  const myMemberId = ctx.familyMemberId;
+  if (!myMemberId) {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  assertAvatarPatch(input);
+
+  const target = await persistence.findMemberById(input.memberId);
+  if (!target || target.familyId !== familyId) {
+    throw new Error("MEMBER_NOT_FOUND");
+  }
+
+  const isSelf = target.id === myMemberId;
+  const isParent = ctx.memberType === "parent";
+
+  if (!isSelf && !isParent) {
+    throw new Error("NOT_PARENT");
+  }
+
+  if (input.memberType !== undefined && !isParent) {
+    throw new Error("NOT_PARENT");
+  }
+
+  if (input.memberType === "child" && target.memberType === "parent") {
+    const parentCount = await persistence.countParentsInFamily(familyId);
+    if (parentCount <= 1) {
+      throw new Error("LAST_PARENT_CANNOT_LEAVE");
+    }
+  }
+
+  const patch: {
+    displayName?: string;
+    memberType?: "parent" | "child";
+    avatarColor?: string | null;
+    avatarIcon?: string | null;
+  } = {};
+
+  if (input.displayName !== undefined) {
+    patch.displayName = input.displayName.trim();
+  }
+  if (input.memberType !== undefined) {
+    patch.memberType = input.memberType;
+  }
+  if (input.avatarColor !== undefined) {
+    patch.avatarColor = input.avatarColor;
+  }
+  if (input.avatarIcon !== undefined) {
+    patch.avatarIcon = input.avatarIcon;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return target;
+  }
+
+  const updated = await persistence.updateMember({
+    memberId: input.memberId,
+    familyId,
+    patch,
+  });
+  if (!updated) {
+    throw new Error("MEMBER_NOT_FOUND");
+  }
+  return updated;
+}
+
+export async function unlinkMemberLogin(
+  ctx: AuthContext,
+  input: z.infer<typeof unlinkMemberLoginInput>,
+): Promise<persistence.FamilyMember> {
+  requireParent(ctx);
+  const familyId = requireFamilyId(ctx);
+
+  const target = await persistence.findMemberById(input.memberId);
+  if (!target || target.familyId !== familyId) {
+    throw new Error("MEMBER_NOT_FOUND");
+  }
+  if (!target.userId) {
+    throw new Error("MEMBER_HAS_NO_LOGIN");
+  }
+
+  const updated = await persistence.unlinkMemberLogin({
+    memberId: input.memberId,
+    familyId,
+  });
+  if (!updated) {
+    throw new Error("MEMBER_NOT_FOUND");
+  }
+  return updated;
 }

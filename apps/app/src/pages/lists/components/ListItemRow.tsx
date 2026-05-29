@@ -4,12 +4,14 @@ import type { MemberNameFields } from "../../../lib/member-display-name";
 import { isListItemCompleted } from "../../../lib/list-item-completion";
 import { useItemRowGestures } from "../../utils/dnd/hooks/useItemRowGestures";
 import { composeDraggableListeners } from "../../utils/dnd/lib/compose-pointer-listeners";
-import { listItemBadgeLabel } from "../lib/list-item-badge-label";
+import { listItemPointsBadgeLabel } from "../lib/list-item-badge-label";
+import { resolveListItemAssignees } from "../lib/list-item-assignees";
 import { LIST_ITEM_CARD } from "../lib/list-item-card-styles";
 import {
   InlineEditableText,
   type InlineEditableTextHandle,
 } from "./InlineEditableText";
+import { ListItemAssigneeAvatars } from "./ListItemAssigneeAvatars";
 import { ListItemPillBadge } from "./ListItemPillBadge";
 import type { SortableItemShellProps } from "./SortableItemWrapper";
 
@@ -44,7 +46,8 @@ export function ListItemRow({
 }: ListItemRowProps) {
   const titleRef = useRef<InlineEditableTextHandle>(null);
   const isCompleted = isListItemCompleted(item);
-  const badgeLabel = listItemBadgeLabel(item, familyMembers);
+  const assignees = resolveListItemAssignees(item.assigneeIds, familyMembers);
+  const pointsLabel = listItemPointsBadgeLabel(item, familyMembers);
 
   const gestures = useItemRowGestures({
     onShortPress: () => {
@@ -93,7 +96,10 @@ export function ListItemRow({
             inputClassName="text-sm font-medium"
           />
         </div>
-        {badgeLabel ? <ListItemPillBadge>{badgeLabel}</ListItemPillBadge> : null}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {assignees ? <ListItemAssigneeAvatars assignees={assignees} /> : null}
+          {pointsLabel ? <ListItemPillBadge>{pointsLabel}</ListItemPillBadge> : null}
+        </div>
       </div>
     </div>
   );

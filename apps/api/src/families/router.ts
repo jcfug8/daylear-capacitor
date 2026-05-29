@@ -60,6 +60,16 @@ function mapDomainError(error: unknown): never {
           code: "BAD_REQUEST",
           message: "Could not link login to this member",
         });
+      case "MEMBER_HAS_NO_LOGIN":
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "This member does not have a login",
+        });
+      case "INVALID_AVATAR":
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid avatar selection",
+        });
     }
   }
   throw error;
@@ -170,6 +180,26 @@ export const familiesRouter = createTRPCRouter({
       .mutation(async ({ ctx, input }) => {
         try {
           await domain.removeMember(ctx.auth, input);
+        } catch (e) {
+          mapDomainError(e);
+        }
+      }),
+
+    update: familyProcedure
+      .input(domain.updateMemberInput)
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await domain.updateMember(ctx.auth, input);
+        } catch (e) {
+          mapDomainError(e);
+        }
+      }),
+
+    unlinkLogin: familyProcedure
+      .input(domain.unlinkMemberLoginInput)
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await domain.unlinkMemberLogin(ctx.auth, input);
         } catch (e) {
           mapDomainError(e);
         }

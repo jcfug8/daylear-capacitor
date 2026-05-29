@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { db } from "../db/client.js";
 import {
   family,
@@ -25,6 +25,8 @@ export type FamilyMember = {
   userName: string | null;
   memberType: "parent" | "child";
   points: number;
+  avatarColor: string | null;
+  avatarIcon: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -64,6 +66,8 @@ function toMember(
     userName,
     memberType: row.memberType,
     points: row.points,
+    avatarColor: row.avatarColor,
+    avatarIcon: row.avatarIcon,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -115,7 +119,11 @@ export async function listMembersByFamilyId(
     })
     .from(familyMember)
     .leftJoin(user, eq(familyMember.userId, user.id))
-    .where(eq(familyMember.familyId, familyId));
+    .where(eq(familyMember.familyId, familyId))
+    .orderBy(
+      sql`case when ${familyMember.memberType} = 'parent' then 0 else 1 end`,
+      asc(familyMember.createdAt),
+    );
   return rows.map((row) => toMember(row.member, row.userName));
 }
 
@@ -404,11 +412,75 @@ export async function findMemberById(
   memberId: string,
 ): Promise<FamilyMember | null> {
   const rows = await db
-    .select()
+    .select({
+      member: familyMember,
+      userName: user.name,
+    })
     .from(familyMember)
+    .leftJoin(user, eq(familyMember.userId, user.id))
     .where(eq(familyMember.id, memberId))
     .limit(1);
-  return rows[0] ? toMember(rows[0]) : null;
+  return rows[0] ? toMember(rows[0].member, rows[0].userName) : null;
+}
+
+export async function updateMember(input: {
+  memberId: string;
+  familyId: string;
+  patch: {
+    displayName?: string;
+    memberType?: "parent" | "child";
+    avatarColor?: string | null;
+    avatarIcon?: string | null;
+  };
+}): Promise<FamilyMember | null> {
+  const set: Partial<typeof familyMember.$inferInsert> = {
+    updatedAt: new Date(),
+  };
+  if (input.patch.displayName !== undefined) {
+    set.displayName = input.patch.displayName;
+  }
+  if (input.patch.memberType !== undefined) {
+    set.memberType = input.patch.memberType;
+  }
+  if (input.patch.avatarColor !== undefined) {
+    set.avatarColor = input.patch.avatarColor;
+  }
+  if (input.patch.avatarIcon !== undefined) {
+    set.avatarIcon = input.patch.avatarIcon;
+  }
+
+  const [row] = await db
+    .update(familyMember)
+    .set(set)
+    .where(
+      and(
+        eq(familyMember.id, input.memberId),
+        eq(familyMember.familyId, input.familyId),
+      ),
+    )
+    .returning();
+
+  if (!row) return null;
+  return findMemberById(input.memberId);
+}
+
+export async function unlinkMemberLogin(input: {
+  memberId: string;
+  familyId: string;
+}): Promise<FamilyMember | null> {
+  const [row] = await db
+    .update(familyMember)
+    .set({ userId: null, updatedAt: new Date() })
+    .where(
+      and(
+        eq(familyMember.id, input.memberId),
+        eq(familyMember.familyId, input.familyId),
+      ),
+    )
+    .returning();
+
+  if (!row) return null;
+  return findMemberById(input.memberId);
 }
 
 /** @deprecated use createFamilyWithFirstParent */

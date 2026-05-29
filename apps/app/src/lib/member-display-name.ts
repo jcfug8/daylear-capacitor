@@ -4,6 +4,8 @@ export type MemberNameFields = {
   userId: string | null;
   userName?: string | null;
   displayName: string;
+  avatarColor?: string | null;
+  avatarIcon?: string | null;
 };
 
 export function memberDisplayName(member: MemberNameFields): string {

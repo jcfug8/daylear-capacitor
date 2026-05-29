@@ -169,9 +169,7 @@ export function ListItemForm({
                 : value
                   ? [String(value)]
                   : [];
-              const assigneeIds = selectedIds.includes(ANYONE_ASSIGNEE_ID)
-                ? [ANYONE_ASSIGNEE_ID]
-                : selectedIds;
+              const assigneeIds = [...new Set(selectedIds)];
               onValuesChange({ assigneeIds });
             }}
           >

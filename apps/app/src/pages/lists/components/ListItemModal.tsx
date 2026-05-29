@@ -50,6 +50,7 @@ export function ListItemModal(props: ListItemModalProps) {
   const { isOpen, onClose, sections, family, pending, mode } = props;
   const [presentAlert] = useIonAlert();
   const [name, setName] = useState("");
+  const [points, setPoints] = useState(0);
   const utils = trpc.useUtils();
 
   const editItem = mode === "edit" ? props.item : null;
@@ -98,7 +99,10 @@ export function ListItemModal(props: ListItemModalProps) {
   const formPending = pending || createSection.isPending;
 
   useEffect(() => {
-    if (editItem) setName(editItem.name);
+    if (editItem) {
+      setName(editItem.name);
+      setPoints(editItem.points);
+    }
   }, [editItem]);
 
   function confirmDelete() {
@@ -132,12 +136,20 @@ export function ListItemModal(props: ListItemModalProps) {
     }
   }
 
+  function savePointsIfChanged() {
+    if (mode !== "edit" || !props.item || isListItemCompleted(props.item)) return;
+    if (points !== props.item.points) {
+      props.onChangePoints(points);
+    }
+  }
+
   function handleDone() {
     if (mode === "create") {
       props.onCreate();
       return;
     }
     saveNameIfChanged();
+    savePointsIfChanged();
     onClose();
   }
 
@@ -149,7 +161,7 @@ export function ListItemModal(props: ListItemModalProps) {
         ? {
             name,
             completedByMemberId: editItem.completedByMemberId,
-            points: editItem.points,
+            points,
             sectionId: editItem.sectionId,
             assigneeIds: editItem.assigneeIds,
             listId: props.listId,
@@ -171,7 +183,7 @@ export function ListItemModal(props: ListItemModalProps) {
     if (!editItem || isListItemCompleted(editItem)) return;
 
     if (patch.name !== undefined) setName(patch.name);
-    if (patch.points !== undefined) props.onChangePoints(patch.points);
+    if (patch.points !== undefined) setPoints(patch.points);
     if (patch.sectionId !== undefined) props.onChangeSection(patch.sectionId);
     if (patch.assigneeIds !== undefined) props.onSetAssignees(patch.assigneeIds);
   }
